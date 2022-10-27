@@ -1,29 +1,19 @@
 # Purpose
-# This code pulls static variables from ROMS NetCDF output and map it to the model area of Ecopath models for the Gulf of Alaska. 
+# This code pulls static variables from ROMS NetCDF output and map it to a desired model area. 
+install.packages("pacman")
+pacman::p_load(tidyverse, tidync, sf, rnaturalearth, raster, data.table, maps, mapdata, angstroms, viridis)
 
-library(tidyverse)
-library(tidync)
-library(sf)
-library(rnaturalearth)
-library(raster)
-library(data.table)
-library(maps)
-library(mapdata)
-library(angstroms)
-library(viridis)
 
-select <- dplyr::select
-
-## Read Ecopath mask
+## Read in shape files of desired area.
 mask <- st_read("EGOA.shp")
 
 ## Import ROMS data
 # For GOA, we have grid information stored in a grid file, and the variables stored in the netCDF files.
-romsfile <- "data/ROMS/monthly_avgs/cgoa_moave_2016_01.nc" # read any one roms file for depth information - actually the only reason why we need this is because the depth matching will be done once and not at every time step like the extraction of all other variables
-romsfile2 <- "data/ROMS/CGOA_grid_5.nc"
+romsfile_vars <- "data/ROMS/monthly_avgs/cgoa_moave_2016_01.nc" # read any one roms file for depth information - actually the only reason why we need this is because the depth matching will be done once and not at every time step like the extraction of all other variables
+romsfile_grid <- "data/ROMS/CGOA_grid_5.nc"
 
-roms_vars <- tidync(romsfile)
-roms_grid <- tidync(romsfile2)
+roms_vars <- tidync(romsfile_vars)
+roms_grid <- tidync(romsfile_grid)
 
 # Get variables. We do not need water velocity for Ecopath, so we can ignore u and v points. 
 # grid info
@@ -45,7 +35,7 @@ roms_variables <- hyper_grids(roms_vars) %>% # all available grids in the ROMS n
 # find appropriate ROMS ncdf grid for the rho points
 latlon_rhogrd <- grid_variables %>% filter(name=="lat_rho") %>% pluck('grd')
 # pull the lon/lats
-roms_rho <- roms_grid %>% activate(latlon_rhogrd) %>% hyper_tibble() %>% select(lon_rho,lat_rho,xi_rho,eta_rho) %>% 
+roms_rho <- roms_grid %>% activate(latlon_rhogrd) %>% hyper_tibble() %>% dplyr::select(lon_rho,lat_rho,xi_rho,eta_rho) %>% 
   mutate(rhoidx=row_number()) # add index
 
 # Add coordinates in the CRS used by the Ecopath mask.
@@ -224,7 +214,7 @@ romshcoords_goa <- function(x, y, grid_type = "rho", slice, ..., S = "Cs_r", dep
 # for models like these the bending free surface amounts to rounding error.
 
 # convert ROMS s-coordinates to depth with Mike Sumner's angstroms package
-romsdepths <- romshcoords_goa(x = romsfile2, y = romsfile, S = "Cs_r", depth = "h")
+romsdepths <- romshcoords_goa(x = romsfile_grid, y = romsfile_vars, S = "Cs_r", depth = "h")
 
 # using tabularaster to convert to tibble
 # and a indexing template with "by_column" filling
@@ -288,7 +278,7 @@ interpolate_var <- function(variable, time_step, this_roms_vars, this_roms_varia
     interp_dat <- interp_dat %>%
       mutate(value_m2 = purrr::map_dbl(interp,function(x)mean(x$val)),
              depth = purrr::map_dbl(interp,function(x)min(x$depth))) %>%
-      select(-interp)
+      dplyr::select(-interp)
   } else {
     interp_dat <- interp_dat %>%
       mutate(value_m2 = purrr::map_dbl(interp,function(x)sum(x$val)),
