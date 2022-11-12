@@ -11,23 +11,17 @@ output:
 
 # Purpose
 
-Workflow to produce spatial masks for Ecopath GOA models from:
+Workflow to produce spatial masks for GOA models from:
 
 1. NMFS statistical areas
 2. ETOPO depth raster
 
-Two spatial masks are produced: 
+Spatial masks are produced for the following NMFS areas: 610, 620, 630, 640, 650; from 0 to 1000 m depth.
 
-1. For the Western and Central GOA Ecopath model: NMFS areas 610, 620, 630; from 0 to 1000 m depth.
-2. For the Eastern GOA Ecopath model: NMFS areas 640, 650; from 0 to 1000 m depth.
 
 ```{r, include = FALSE}
-library(tidyverse)
-library(sf)
-library(raster)
-library(maps)
-library(mapdata)
-library(viridis)
+# install.packages("pacman")
+pacman::p_load(tidyverse, sf, raster, maps, mapdata, viridis, devtools, rgdal, rgeos)
 ```
 
 ```{r setup, include=FALSE}
@@ -42,12 +36,15 @@ select <- dplyr::select
 
 Read in statistical areas.
 ```{r}
-nmfs <- st_read("data/shapefiles/gf95_nmfs/gf95_nmfs.shp")
+setwd("..") # Have to go back one directory
+nmfs <- st_read("Data/NMFS management area shapefiles/gf95_nmfs.shp")
 ```
 
 ```{r}
 nmfs <- nmfs %>% filter(NMFS_AREA %in% c(610,620,630,640,650)) %>% # subset to 610-650
-  filter(GF95_NMFS1 %in% c(186,194,259,585,870)) %>% select(NMFS_AREA, geometry)
+  filter(GF95_NMFS1 %in% c(186,194,259,585,870)) # Removes inter-coastal in SE AK
+
+# This shapefile had three areas labelled 650. Two of them seem to be smaller than the rest, so removed.
 ```
 
 Visualise.
@@ -62,12 +59,18 @@ ggplot()+
   theme_minimal()+
   labs(title = "NMFS statistical areas")
 ```
-This shapefile has three areas labelled 650. Two of them seem to be smaller than the rest. Are they all of interest for the Ecopath application?
+
 
 Read in depth raster.
 ```{r}
-etopo <- raster("data/ETOPO1_Bed_c_gdal.grd/ETOPO1_Bed_c_gdal.grd")
+# https://www.ngdc.noaa.gov/mgg/global/relief/ETOPO1/data/bedrock/cell_registered/netcdf/
+# Download "ETOPO1_Bed_c_gdal.grd.gz" and move to data folder
+setwd("..")
+etopo <- raster("Data/ETOPO1_Bed_c_gdal.grd/ETOPO1_Bed_c_gdal.grd")
+
+plot(etopo)
 ```
+
 Crop raster to extent of statistical areas (need to reproject that to 4326).
 ```{r}
 nmfs_mask <- nmfs %>% st_transform(crs = 4326) %>% st_bbox() %>% extent() # get extent in 4326
@@ -124,7 +127,7 @@ etopo_mask <- etopo_nmfs_sf[1,] # the main shelf polygon seems to be the first r
 Visualise.
 ```{r}
 ggplot()+
-  geom_sf(data = etopo_mask, fill = NA, color = "blue")+
+  geom_sf(data = nmfs_mask, fill = NA, color = "blue")+
   geom_sf(data = coast)+
   theme_minimal()+
   labs(title = "Depth mask (0-1000 m)")
@@ -142,31 +145,39 @@ ggplot()+
 
 ## Create spatial masks
 
-Intersect these, and add "WGOA" and "EGOA" column for the respective areas.
+Intersect the two polygons to have management areas.
 ```{r}
-ecopath <- etopo_mask %>% 
+goa_mask <- etopo_mask %>% 
   st_intersection(nmfs) %>% 
   select(NMFS_AREA, geometry) %>%
   rowwise() %>%
-  mutate(Model = ifelse(NMFS_AREA %in% c(640,650),"EGOA","WGOA"))
+  mutate(Model = NMFS_AREA) # ifelse(NMFS_AREA %in% c(640,650),"EGOA","WGOA")
 
 ggplot()+
-  geom_sf(data = ecopath, aes(fill = Model))+
+  geom_sf(data = goa_mask, aes(fill = Model))+
   geom_sf(data = coast)+
   theme_minimal()+
   labs("Masks for Ecopath GOA models")
 ```
-Does the WGOA Ecopath model push all the way into Cook Inlet?
+Do models push all the way into Cook Inlet?
 
 ### Export as shapefiles
 
-Export the two masks separately.
+Export the masks
 ```{r, eval=FALSE}
-WGOA <- ecopath %>% filter(NMFS_AREA %in% c(610,620,630))
-EGOA <- ecopath %>% filter(NMFS_AREA %in% c(640,650))
+NMFS610 <- goa_mask %>% filter(NMFS_AREA %in% c(610))
+NMFS620 <- goa_mask %>% filter(NMFS_AREA %in% c(620))
+NMFS630 <- goa_mask %>% filter(NMFS_AREA %in% c(630))
+NMFS640 <- goa_mask %>% filter(NMFS_AREA %in% c(640))
+NMFS650 <- goa_mask %>% filter(NMFS_AREA %in% c(650))
 
-st_write(WGOA, "WGOA.shp", append = FALSE)
-st_write(EGOA, "EGOA.shp", append = FALSE)
+setwd("..")
+st_write(NMFS610, "Data/Depth trimmed NMFS shapefiles/NMFS610.shp", append = FALSE)
+st_write(NMFS620, "Data/Depth trimmed NMFS shapefiles/NMFS620.shp", append = FALSE)
+st_write(NMFS630, "Data/Depth trimmed NMFS shapefiles/NMFS630.shp", append = FALSE)
+st_write(NMFS640, "Data/Depth trimmed NMFS shapefiles/NMFS640.shp", append = FALSE)
+st_write(NMFS650, "Data/Depth trimmed NMFS shapefiles/NMFS650.shp", append = FALSE)
+st_write(goa_mask, "Data/Depth trimmed NMFS shapefiles/NMFS610-650.shp", append = FALSE)
 ```
 
-**Note**: this could be refined. The current method produces a "jagged" contour of the mask along the 0 m and 1000 m isobaths, which is the result of converting the depth raster cells to a polygon mask. I think that for the purpose of approximating the area of the Ecopath models this is probably below rounding error, but I want to try and refine it at some point. It sould be a good placeholder for now.
+**Note**: this could be refined. The current method produces a "jagged" contour of the mask along the 0 m and 1000 m isobaths, which is the result of converting the depth raster cells to a polygon mask. I think that for the purpose of approximating the area of the models this is probably below rounding error, but I want to try and refine it at some point. It sould be a good placeholder for now.
