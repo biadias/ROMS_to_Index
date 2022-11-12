@@ -3,19 +3,7 @@
 .RData
 .Ruserdata
 *.zip
-#spatial data
-*.shp
-*.prj
-*.dbf
-*.shx
-*.grd
-*.gri
-*.sbm
-*.sbn
-*.sbx
-*.lock
-*.tif
-*.xml
 
 #big netCDF data
 *.nc
+*.grd
