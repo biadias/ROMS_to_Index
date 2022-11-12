@@ -1,0 +1,61 @@
+---
+title: "Index proposal"
+format: docx
+editor: visual
+---
+
+## **Proposal for ROMS monthly aggregated statistics**
+
+Statistics based on shelf & slope waters (\< 1000 m bottom depth)
+
+### Depth:
+
+Surface (to 10 m depth)
+
+Bottom (to 10 m from bottom)
+
+Midwater (10 m to 10 m from bottom)
+
+### Area: 
+
+NMFS statistical areas + Canadian waters
+
+610, 620, 630, 640, 650, Canada
+
+## Other specialized statistics:
+
+Coastal current intensity?
+
+Onshore/offshore transport?
+
+## Variables to report:
+
+Temperature
+
+Salinity
+
+\[Nitrate\]?
+
+\[Ammonia\]?
+
+\[Iron\]?
+
+Along shelf transport
+
+Across shelf transport
+
+Small phytoplankton biomass and production
+
+Large phytoplankton biomass and production
+
+Small microzooplankton biomass and production
+
+Large microzooplankton biomass and production
+
+Small (coastal) copepod biomass and production
+
+Large (*Neocalanus*) copepod biomass and production
+
+Euphausiid biomass and production
+
+\[Detritus\]?
