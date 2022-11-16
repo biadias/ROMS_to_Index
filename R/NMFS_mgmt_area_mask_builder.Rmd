@@ -157,7 +157,7 @@ ggplot()+
   geom_sf(data = goa_mask, aes(fill = Model))+
   geom_sf(data = coast)+
   theme_minimal()+
-  labs("Masks for Ecopath GOA models")
+  labs("Masks for GOA models")
 ```
 Do models push all the way into Cook Inlet?
 
@@ -179,5 +179,7 @@ st_write(NMFS640, "Data/Depth trimmed NMFS shapefiles/NMFS640.shp", append = FAL
 st_write(NMFS650, "Data/Depth trimmed NMFS shapefiles/NMFS650.shp", append = FALSE)
 st_write(goa_mask, "Data/Depth trimmed NMFS shapefiles/NMFS610-650.shp", append = FALSE)
 ```
+
+
 
 **Note**: this could be refined. The current method produces a "jagged" contour of the mask along the 0 m and 1000 m isobaths, which is the result of converting the depth raster cells to a polygon mask. I think that for the purpose of approximating the area of the models this is probably below rounding error, but I want to try and refine it at some point. It sould be a good placeholder for now.

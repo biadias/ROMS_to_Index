@@ -42,7 +42,8 @@ select <- dplyr::select
 
 Load the Ecopath spatial masks.
 ```{r}
-mask <- st_read("EGOA.shp")
+setwd("..")
+mask <- st_read("Data/Depth trimmed NMFS shapefiles/NMFS610-650.shp")
 #mask <- mask %>% st_combine()
 ```
 
@@ -63,11 +64,12 @@ ggplot()+
 For GOA, we have grid information stored in a grid file, and the variables stored in the netCDF files.
 
 ```{r}
-romsfile <- "data/ROMS/test_from_loon/cgoa_moave_2016_04.nc"
-romsfile2 <- "data/ROMS/CGOA_grid_5.nc"
+romsfile <- "data/ROMS/monthly_averages/nep_hind_moave_2007_01.nc" 
+romsfile2 <- "data/ROMS/NEP_grid_5a.nc"
 ```
 
 ```{r}
+setwd("..")
 roms_vars <- tidync(romsfile)
 roms_grid <- tidync(romsfile2)
 ```

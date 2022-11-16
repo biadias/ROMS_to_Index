@@ -1,21 +1,23 @@
 # Purpose
 # This code pulls static variables from ROMS NetCDF output and map it to a desired model area. 
-install.packages("pacman")
-pacman::p_load(tidyverse, tidync, sf, rnaturalearth, raster, data.table, maps, mapdata, angstroms, viridis)
+
+# install.packages("pacman")
+pacman::p_load(tidyverse, tidync, sf, rnaturalearth, raster, data.table, maps, mapdata, angstroms, viridis, tabularaster)
 
 
 ## Read in shape files of desired area.
-mask <- st_read("EGOA.shp")
+mask <- st_read("Data/Depth trimmed NMFS shapefiles/NMFS610-650.shp")
 
 ## Import ROMS data
 # For GOA, we have grid information stored in a grid file, and the variables stored in the netCDF files.
-romsfile_vars <- "data/ROMS/monthly_avgs/cgoa_moave_2016_01.nc" # read any one roms file for depth information - actually the only reason why we need this is because the depth matching will be done once and not at every time step like the extraction of all other variables
-romsfile_grid <- "data/ROMS/CGOA_grid_5.nc"
+romsfile_vars <- "data/ROMS/monthly_averages/nep_hind_moave_2007_01.nc" # read any one roms file for depth information - actually the only reason why we need this is because the depth matching will be done once and not at every time step like the extraction of all other variables
+romsfile_grid <- "data/ROMS/NEP_grid_5a.nc"
 
 roms_vars <- tidync(romsfile_vars)
 roms_grid <- tidync(romsfile_grid)
 
-# Get variables. We do not need water velocity for Ecopath, so we can ignore u and v points. 
+
+# Get variables. We do not need water velocity, so we can ignore u and v points. 
 # grid info
 grid_variables <- hyper_grids(roms_grid) %>% # all available grids in the ROMS ncdf
   pluck("grid") %>% # for each grid, pull out all the variables asssociated with that grid and make a reference table
@@ -24,6 +26,7 @@ grid_variables <- hyper_grids(roms_grid) %>% # all available grids in the ROMS n
       mutate(grd=x)
   })
 
+
 #variables
 roms_variables <- hyper_grids(roms_vars) %>% # all available grids in the ROMS ncdf
   pluck("grid") %>% # for each grid, pull out all the variables asssociated with that grid and make a reference table
@@ -31,6 +34,8 @@ roms_variables <- hyper_grids(roms_vars) %>% # all available grids in the ROMS n
     roms_vars %>% activate(x) %>% hyper_vars() %>% 
       mutate(grd=x)
   })
+roms_variables$name
+
 
 # find appropriate ROMS ncdf grid for the rho points
 latlon_rhogrd <- grid_variables %>% filter(name=="lat_rho") %>% pluck('grd')
@@ -38,7 +43,8 @@ latlon_rhogrd <- grid_variables %>% filter(name=="lat_rho") %>% pluck('grd')
 roms_rho <- roms_grid %>% activate(latlon_rhogrd) %>% hyper_tibble() %>% dplyr::select(lon_rho,lat_rho,xi_rho,eta_rho) %>% 
   mutate(rhoidx=row_number()) # add index
 
-# Add coordinates in the CRS used by the Ecopath mask.
+
+# Add coordinates in the CRS used by the NMFS mask.
 append_xy_coords <- function(lonlatdat, xyproj=crs(mask)@projargs, lon_col="lon_rho", lat_col="lat_rho"){
   lonlatdat %>% 
     st_as_sf(coords=c(lon_col, lat_col), crs=4326, remove=F) %>%  # convert to spatial object
@@ -49,11 +55,11 @@ append_xy_coords <- function(lonlatdat, xyproj=crs(mask)@projargs, lon_col="lon_
 
 rhoxy<- append_xy_coords(roms_rho,lon_col="lon_rho",lat_col="lat_rho") %>% mutate(rhoidx=row_number())
 
-# Match ROMS and Ecopath
-# Join rho points to the Ecopath mask. Do a spatial join.
+# Match ROMS and NMFS grid
+# Join rho points to the NMFS mask. Do a spatial join.
 rho_join <- mask %>% st_join(rhoxy) %>% na.omit()
 
-# Get indeces of rho, u, and v points that overlap with Atlantis geometry, to subset large ROMS files and reduce memory chokes
+# Get indeces of rho, u, and v points that overlap with GOA geometry, to subset large ROMS files and reduce memory chokes
 min_xi_rho <- min(rho_join$xi_rho, na.rm = TRUE)
 max_xi_rho <- max(rho_join$xi_rho, na.rm = TRUE)
 min_eta_rho <- min(rho_join$eta_rho, na.rm = TRUE)
@@ -209,7 +215,7 @@ romshcoords_goa <- function(x, y, grid_type = "rho", slice, ..., S = "Cs_r", dep
   out
 }
 
-# Apply to get depths at $\rho$ points. For the purpose of the Ecopath model this will only be done once, 
+# Apply to get depths at $\rho$ points. For the purpose of the goa model this will only be done once, 
 # altough depth in ROMS is dynamic over time. We only do it once in Atlantis too - 
 # for models like these the bending free surface amounts to rounding error.
 
@@ -230,7 +236,7 @@ romsdepthsdf <- tabularaster::as_tibble(romsdepths,dim=F) %>%
 
 # Pull variables from ROMS
 
-# list the variables of interest - after Szymon's list
+# list the variables of interest - after list
 state_vars <- c('temp','salt','frat_PhS','frat_PhL','CChl_PhS','CChl_PhL')
 conc_vars <- c('NO3','NH4','PhS','PhL','MZS','MZL','Cop','NCa','Eup','Det','Iron','prod_PhS','prod_PhL','prod_MZS','prod_MZL','prod_Cop','prod_NCa','prod_Eup')
 all_variables <- c(state_vars,conc_vars)
@@ -245,7 +251,7 @@ interp_foo <- function(romsdepths,romsvar) {
 # Writing another function that:
 # 1. Applies the cubic spline interpolation at each rho point.
 # 2. Integrates over the water column as appropriate for each variable (i.e. average for state variables like temperature and salinity, sum for concentrations per m3 to obtain values per m2).
-# 3. Return average values for each traces over the Ecopath model domain.
+# 3. Return average values for each traces over the goa model domain.
 
 interpolate_var <- function(variable, time_step, this_roms_vars, this_roms_variables){
   grd <- this_roms_variables %>% filter(name==variable) %>% pluck('grd')
@@ -286,24 +292,24 @@ interpolate_var <- function(variable, time_step, this_roms_vars, this_roms_varia
       select(-interp)
   }
   
-  # join to rho_join set to subset to Ecopath mask only
+  # join to rho_join set to subset to goa mask only
   interp_dat <- rho_join %>%
     st_set_geometry(NULL) %>%
     left_join(interp_dat,by=c('xi_rho','eta_rho'))
   
   # return(interp_dat) # if you want to see what things look like spatially, this is a good place to return an output for visualisation
   
-  # take averages of all the rho points over the entire Ecopath model domain for this time step
-  ecopath_value <- interp_dat %>% 
+  # take averages of all the rho points over the entire goa model domain for this time step
+  goa_value <- interp_dat %>% 
     select(value_m2) %>% 
-    summarise(ecopath_value=mean(value_m2,na.rm=TRUE)) %>%
+    summarise(goa_value=mean(value_m2,na.rm=TRUE)) %>%
     ungroup() %>%
     pull()
 }
 
 # write a function that, for each netcdf file, applies the interpolation function above to all variables in all time steps (one ts per netcdf file in what Al gave me, but this should work for netcdf with multiple time steps too)
 
-roms_to_ecopath <- function(this_romsfile){
+roms_to_goa <- function(this_romsfile){
   # read roms netcdf file
   this_roms_vars <- tidync(this_romsfile)
   this_roms_variables <- hyper_grids(this_roms_vars) %>% # all available grids in the ROMS ncdf
@@ -322,29 +328,29 @@ roms_to_ecopath <- function(this_romsfile){
     set_names(c('variable','time_step'))
   
   # read variables and carry out interplation
-  ecopath_vals <- var_time_combos %>% 
-    mutate(ecopath_values = purrr::pmap_dbl(list(variable=variable,time_step=time_step),interpolate_var,this_roms_variables=this_roms_variables,this_roms_vars=this_roms_vars))
+  goa_vals <- var_time_combos %>% 
+    mutate(goa_values = purrr::pmap_dbl(list(variable=variable,time_step=time_step),interpolate_var,this_roms_variables=this_roms_variables,this_roms_vars=this_roms_vars))
   
   # turn ocean_time to a date - make sure you find the correct Epoch for your model
   epoch <- "1900-01-01" #important, check that this is your correct start for ocean_time or the dates will be messed up
   
-  ecopath_vals <- ecopath_vals %>% mutate(date=as.POSIXct(time_step, origin = epoch, tz='UTC')) %>%
+  goa_vals <- goa_vals %>% mutate(date=as.POSIXct(time_step, origin = epoch, tz='UTC')) %>%
     arrange(variable,time_step)
   
-  return(ecopath_vals)
+  return(goa_vals)
 }
 
 # get all roms files
 
-all_files <- list.files('data/ROMS/monthly_avgs/', full.names = TRUE)
+all_files <- list.files('data/ROMS/monthly_averages/', full.names = TRUE)
 
 # apply to all files
-ecopath_vals_list <- purrr::map(all_files,possibly(roms_to_ecopath,NA))
+goa_vals_list <- purrr::map(all_files,possibly(roms_to_goa,NA))
 
-ecopath_vals <- rbindlist(ecopath_vals_list)
+goa_vals <- rbindlist(goa_vals_list)
 
 # plot for testing
-ecopath_vals %>% ggplot(aes(x=date,y=ecopath_values))+
+goa_vals %>% ggplot(aes(x=date,y=goa_values))+
   geom_point()+
   geom_line()+
   theme_minimal()+
