@@ -3,7 +3,7 @@
 
 # install.packages("pacman")
 pacman::p_load(tidyverse, tidync, sf, rnaturalearth, raster, data.table, maps, mapdata, angstroms, viridis, tabularaster)
-
+select <- dplyr::select
 
 ## Read in shape files of desired area.
 mask <- st_read("Data/Depth trimmed NMFS shapefiles/NMFS610-650.shp")
@@ -45,7 +45,7 @@ roms_rho <- roms_grid %>% activate(latlon_rhogrd) %>% hyper_tibble() %>% dplyr::
 
 
 # Add coordinates in the CRS used by the NMFS mask.
-append_xy_coords <- function(lonlatdat, xyproj=crs(mask)@projargs, lon_col="lon_rho", lat_col="lat_rho"){
+append_xy_coords <- function(lonlatdat, xyproj=st_crs(mask), lon_col="lon_rho", lat_col="lat_rho"){
   lonlatdat %>% 
     st_as_sf(coords=c(lon_col, lat_col), crs=4326, remove=F) %>%  # convert to spatial object
     st_transform(xyproj) %>%  # convert to Atlantis coords
@@ -237,8 +237,8 @@ romsdepthsdf <- tabularaster::as_tibble(romsdepths,dim=F) %>%
 # Pull variables from ROMS
 
 # list the variables of interest - after list
-state_vars <- c('temp','salt','frat_PhS','frat_PhL','CChl_PhS','CChl_PhL')
-conc_vars <- c('NO3','NH4','PhS','PhL','MZS','MZL','Cop','NCa','Eup','Det','Iron','prod_PhS','prod_PhL','prod_MZS','prod_MZL','prod_Cop','prod_NCa','prod_Eup')
+state_vars <- c('temp') #,'salt','frat_PhS','frat_PhL','CChl_PhS','CChl_PhL')
+conc_vars <- "Cop" #c('NO3','NH4','PhS','PhL','MZS','MZL','Cop','NCa','Eup','Det','Iron','prod_PhS','prod_PhL','prod_MZS','prod_MZL','prod_Cop','prod_NCa','prod_Eup')
 all_variables <- c(state_vars,conc_vars)
 
 # Writing a function to interpolate variables with cubic splines over 1 m intervals in the water column. 
@@ -278,6 +278,7 @@ interpolate_var <- function(variable, time_step, this_roms_vars, this_roms_varia
     dplyr::select(-data,-evar,-romsdepth)
   
   #TODO: spit a warning if for any rho point temp at the surface is lower than at depth - may be sign of depths from ROMS being inverted
+  #TODO: Take average over depth range
   
   # integrate. For state variables, take the average over the water column. For concentrations, sum over the water column.
   if(variable %in% c(state_vars)){
