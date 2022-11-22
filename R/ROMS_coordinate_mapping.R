@@ -1,24 +1,11 @@
 # Purpose
-# This code pulls static variables from ROMS NetCDF output and map it to a desired model area. 
-
-# install.packages("pacman")
-pacman::p_load(tidyverse, tidync, sf, rnaturalearth, raster, data.table, maps, mapdata, angstroms, viridis, tabularaster)
-select <- dplyr::select
-
-## Read in shape files of desired area.
-mask <- st_read("Data/Depth trimmed NMFS shapefiles/NMFS610-650.shp")
-
-## Import ROMS data
-# For GOA, we have grid information stored in a grid file, and the variables stored in the netCDF files.
-romsfile_vars <- "data/ROMS/monthly_averages/nep_hind_moave_2007_01.nc" # read any one roms file for depth information - actually the only reason why we need this is because the depth matching will be done once and not at every time step like the extraction of all other variables
-romsfile_grid <- "data/ROMS/NEP_grid_5a.nc"
-
+# This loads the GOA mask and maps the ROMS coordinates to the NMFS coordinates
 roms_vars <- tidync(romsfile_vars)
 roms_grid <- tidync(romsfile_grid)
 
 
 # Get variables. We do not need water velocity, so we can ignore u and v points. 
-# grid info
+# Grid info
 grid_variables <- hyper_grids(roms_grid) %>% # all available grids in the ROMS ncdf
   pluck("grid") %>% # for each grid, pull out all the variables asssociated with that grid and make a reference table
   purrr::map_df(function(x){
@@ -27,7 +14,7 @@ grid_variables <- hyper_grids(roms_grid) %>% # all available grids in the ROMS n
   })
 
 
-#variables
+# ROMS variables
 roms_variables <- hyper_grids(roms_vars) %>% # all available grids in the ROMS ncdf
   pluck("grid") %>% # for each grid, pull out all the variables asssociated with that grid and make a reference table
   purrr::map_df(function(x){
@@ -37,18 +24,18 @@ roms_variables <- hyper_grids(roms_vars) %>% # all available grids in the ROMS n
 roms_variables$name
 
 
-# find appropriate ROMS ncdf grid for the rho points
+# Find appropriate ROMS ncdf grid for the rho points
 latlon_rhogrd <- grid_variables %>% filter(name=="lat_rho") %>% pluck('grd')
 # pull the lon/lats
 roms_rho <- roms_grid %>% activate(latlon_rhogrd) %>% hyper_tibble() %>% dplyr::select(lon_rho,lat_rho,xi_rho,eta_rho) %>% 
   mutate(rhoidx=row_number()) # add index
 
 
-# Add coordinates in the CRS used by the NMFS mask.
+# Add NMFS coordinates to ROMS data.
 append_xy_coords <- function(lonlatdat, xyproj=st_crs(mask), lon_col="lon_rho", lat_col="lat_rho"){
   lonlatdat %>% 
     st_as_sf(coords=c(lon_col, lat_col), crs=4326, remove=F) %>%  # convert to spatial object
-    st_transform(xyproj) %>%  # convert to Atlantis coords
+    st_transform(xyproj) %>%  # convert to NMFS coords
     mutate(x = st_coordinates(.)[,1],
            y = st_coordinates(.)[,2]) # grab x and y coordinates and add them as attributes
 }
@@ -59,14 +46,14 @@ rhoxy<- append_xy_coords(roms_rho,lon_col="lon_rho",lat_col="lat_rho") %>% mutat
 # Join rho points to the NMFS mask. Do a spatial join.
 rho_join <- mask %>% st_join(rhoxy) %>% na.omit()
 
-# Get indeces of rho, u, and v points that overlap with GOA geometry, to subset large ROMS files and reduce memory chokes
+# Get range of ROMS coordinates that correspond with GOA geometry, to subset ROMS files and reduce memory chokes
 min_xi_rho <- min(rho_join$xi_rho, na.rm = TRUE)
 max_xi_rho <- max(rho_join$xi_rho, na.rm = TRUE)
 min_eta_rho <- min(rho_join$eta_rho, na.rm = TRUE)
 max_eta_rho <- max(rho_join$eta_rho, na.rm = TRUE)
 
-# Set up depths
 
+# Set up depths
 # Using a custom version of Mike Sumner's angstroms::romshcoords(), because GOA ROMS have grid information in a separate file.
 ncget <- function(x, varname) {
   nc <- ncdf4::nc_open(x)
@@ -78,6 +65,7 @@ set_indextent <- function(x) {
   setExtent(x, extent(0, ncol(x), 0, nrow(x)))
 }
 
+# Function to interporlate over depth
 romshcoords_goa <- function(x, y, grid_type = "rho", slice, ..., S = "Cs_r", depth = "h", simple = FALSE){
   h <- romsdata(x, varname = depth)
   Cs_r <- ncget(y, S)
@@ -216,7 +204,7 @@ romshcoords_goa <- function(x, y, grid_type = "rho", slice, ..., S = "Cs_r", dep
 }
 
 # Apply to get depths at $\rho$ points. For the purpose of the goa model this will only be done once, 
-# altough depth in ROMS is dynamic over time. We only do it once in Atlantis too - 
+# Altough depth in ROMS is dynamic over time. We only do it once in Atlantis too - 
 # for models like these the bending free surface amounts to rounding error.
 
 # convert ROMS s-coordinates to depth with Mike Sumner's angstroms package
@@ -225,6 +213,7 @@ romsdepths <- romshcoords_goa(x = romsfile_grid, y = romsfile_vars, S = "Cs_r", 
 # using tabularaster to convert to tibble
 # and a indexing template with "by_column" filling
 romsi <- crossing(xi_rho=1:dim(romsdepths)[2],eta_rho=1:dim(romsdepths)[1]) %>% arrange(-eta_rho) %>% mutate(cellindex=row_number()) # making sure that the join by cellindex below is correct - doing this for consistency with the way tabularaster::as_tibble() unpacks the raster cells 
+
 romsdepthsdf <- tabularaster::as_tibble(romsdepths,dim=F) %>% 
   arrange(cellindex) %>% 
   left_join(romsi,by='cellindex') %>% 
@@ -233,126 +222,3 @@ romsdepthsdf <- tabularaster::as_tibble(romsdepths,dim=F) %>%
   nest(romsdepth=c(romsdepth)) %>% ungroup() %>% 
   mutate(romsdepth=purrr::map(romsdepth,function(x)x[['romsdepth']])) %>%
   filter(between(xi_rho, min_xi_rho, max_xi_rho) & between(eta_rho, min_eta_rho, max_eta_rho))
-
-# Pull variables from ROMS
-
-# list the variables of interest - after list
-state_vars <- c('temp') #,'salt','frat_PhS','frat_PhL','CChl_PhS','CChl_PhL')
-conc_vars <- "Cop" #c('NO3','NH4','PhS','PhL','MZS','MZL','Cop','NCa','Eup','Det','Iron','prod_PhS','prod_PhL','prod_MZS','prod_MZL','prod_Cop','prod_NCa','prod_Eup')
-all_variables <- c(state_vars,conc_vars)
-
-# Writing a function to interpolate variables with cubic splines over 1 m intervals in the water column. 
-interp_foo <- function(romsdepths,romsvar) {
-  depths_out <- seq(round(min(romsdepths)),0,by=1) # 1m interpolation, starting from deepest
-  interp <- spline(romsdepths,romsvar,xout=depths_out) %>% pluck('y')
-  return(tibble(depth=depths_out,val=interp))
-}
-
-# Writing another function that:
-# 1. Applies the cubic spline interpolation at each rho point.
-# 2. Integrates over the water column as appropriate for each variable (i.e. average for state variables like temperature and salinity, sum for concentrations per m3 to obtain values per m2).
-# 3. Return average values for each traces over the goa model domain.
-
-interpolate_var <- function(variable, time_step, this_roms_vars, this_roms_variables){
-  grd <- this_roms_variables %>% filter(name==variable) %>% pluck('grd')
-  # pull the env data
-  # interpolate the env data
-  # do this step conditional to join with the appropriate depth data frame depending on the variable
-  # if variable is horizontal velocity
-  dat <- this_roms_vars %>% activate(grd) %>%
-    hyper_tibble(select_var=variable, 
-                 xi_rho = between(xi_rho, min_xi_rho, max_xi_rho), 
-                 eta_rho = between(eta_rho, min_eta_rho, max_eta_rho),
-                 ocean_time = ocean_time == time_step)
-  
-  interp_dat <- dat %>% 
-    dplyr::select(xi_rho,eta_rho,!!variable) %>% 
-    nest(data=c(!!variable))%>% 
-    mutate(evar=purrr::map(data,~.[[1]]))
-  
-  interp_dat <- interp_dat %>%
-    inner_join(romsdepthsdf,by=c('xi_rho','eta_rho')) 
-  
-  interp_dat <- interp_dat %>% 
-    mutate(interp = purrr::map2(romsdepth,evar,interp_foo)) %>% 
-    dplyr::select(-data,-evar,-romsdepth)
-  
-  #TODO: spit a warning if for any rho point temp at the surface is lower than at depth - may be sign of depths from ROMS being inverted
-  #TODO: Take average over depth range
-  
-  # integrate. For state variables, take the average over the water column. For concentrations, sum over the water column.
-  if(variable %in% c(state_vars)){
-    interp_dat <- interp_dat %>%
-      mutate(value_m2 = purrr::map_dbl(interp,function(x)mean(x$val)),
-             depth = purrr::map_dbl(interp,function(x)min(x$depth))) %>%
-      dplyr::select(-interp)
-  } else {
-    interp_dat <- interp_dat %>%
-      mutate(value_m2 = purrr::map_dbl(interp,function(x)sum(x$val)),
-             depth = purrr::map_dbl(interp,function(x)min(x$depth))) %>%
-      select(-interp)
-  }
-  
-  # join to rho_join set to subset to goa mask only
-  interp_dat <- rho_join %>%
-    st_set_geometry(NULL) %>%
-    left_join(interp_dat,by=c('xi_rho','eta_rho'))
-  
-  # return(interp_dat) # if you want to see what things look like spatially, this is a good place to return an output for visualisation
-  
-  # take averages of all the rho points over the entire goa model domain for this time step
-  goa_value <- interp_dat %>% 
-    select(value_m2) %>% 
-    summarise(goa_value=mean(value_m2,na.rm=TRUE)) %>%
-    ungroup() %>%
-    pull()
-}
-
-# write a function that, for each netcdf file, applies the interpolation function above to all variables in all time steps (one ts per netcdf file in what Al gave me, but this should work for netcdf with multiple time steps too)
-
-roms_to_goa <- function(this_romsfile){
-  # read roms netcdf file
-  this_roms_vars <- tidync(this_romsfile)
-  this_roms_variables <- hyper_grids(this_roms_vars) %>% # all available grids in the ROMS ncdf
-    pluck("grid") %>% # for each grid, pull out all the variables asssociated with that grid and make a reference table
-    purrr::map_df(function(x){
-      this_roms_vars %>% activate(x) %>% hyper_vars() %>% 
-        mutate(grd=x)
-    })
-  
-  # get time step
-  time_grd <- this_roms_variables %>% filter(name=="ocean_time") %>% pluck('grd')
-  roms_time <- this_roms_vars %>% activate(time_grd) %>% hyper_tibble() %>% pull()
-  
-  # get variable/time step combinations
-  var_time_combos <- expand.grid(all_variables,roms_time) %>% mutate(Var1=as.character(Var1)) %>%
-    set_names(c('variable','time_step'))
-  
-  # read variables and carry out interplation
-  goa_vals <- var_time_combos %>% 
-    mutate(goa_values = purrr::pmap_dbl(list(variable=variable,time_step=time_step),interpolate_var,this_roms_variables=this_roms_variables,this_roms_vars=this_roms_vars))
-  
-  # turn ocean_time to a date - make sure you find the correct Epoch for your model
-  epoch <- "1900-01-01" #important, check that this is your correct start for ocean_time or the dates will be messed up
-  
-  goa_vals <- goa_vals %>% mutate(date=as.POSIXct(time_step, origin = epoch, tz='UTC')) %>%
-    arrange(variable,time_step)
-  
-  return(goa_vals)
-}
-
-# get all roms files
-
-all_files <- list.files('data/ROMS/monthly_averages/', full.names = TRUE)
-
-# apply to all files
-goa_vals_list <- purrr::map(all_files,possibly(roms_to_goa,NA))
-
-goa_vals <- rbindlist(goa_vals_list)
-
-# plot for testing
-goa_vals %>% ggplot(aes(x=date,y=goa_values))+
-  geom_point()+
-  geom_line()+
-  theme_minimal()+
-  facet_wrap(~variable, scales='free')
