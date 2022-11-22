@@ -81,6 +81,7 @@ interpolate_var <- function(variable, time_step, this_roms_vars, this_roms_varia
   #   group_by(cellindex) %>%
   #   summarise(maxdepth = max(abs(depth))) %>% as.data.frame()
   # sum(check$maxdepth > abs(max_depth))/nrow(check)
+  # hist(check$maxdepth)
   
   # Define depth class and remove areas with depth over max_depth
   interp_dat <- interp_dat %>%
