@@ -30,13 +30,13 @@ summed_vars <- average_vars[which(!average_vars %in% c("temp", "salt", "frat_PhS
 sum(!average_vars %in% roms_variables$name) # Good if 0
 
 ## Summarize 
-goa_averaged_vals <- roms_to_goa(netcdf_files = all_files, 
+goa_averaged_vals <- roms_to_goa(netcdf_files = netcdf_files, 
                         variables = average_vars,
                         min_depth = 0, max_depth = -1000,
                         average = TRUE)
 # NOTE: about 10% of the ROMS cells are deeper than 1000 m, after masking?
 
-goa_summed_vals <- roms_to_goa(netcdf_files = all_files, 
+goa_summed_vals <- roms_to_goa(netcdf_files = netcdf_files, 
                                  variables = summed_vars,
                                  min_depth = 0, max_depth = -1000,
                                  average = TRUE)

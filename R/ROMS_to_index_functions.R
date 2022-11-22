@@ -126,7 +126,7 @@ interpolate_var <- function(variable, time_step, this_roms_vars, this_roms_varia
     
     goa_dat <- do.call("rbind", list(goa_dat_area_depth, goa_dat_depth, goa_dat_area, goa_dat))
     
-    goa_dat$summaryStat = "mean across depth and area"
+    goa_dat$summaryStat = "mean"
   } else { # For concentrations, sum over the water column.
     
     # Summarize by spatial area and depthclass
@@ -168,7 +168,7 @@ interpolate_var <- function(variable, time_step, this_roms_vars, this_roms_varia
       as.data.frame()
     
     goa_dat <- do.call("rbind", list(goa_dat_area_depth, goa_dat_depth, goa_dat_area, goa_dat))
-    goa_dat$summaryStat = "mean (per area) sum across depth"
+    goa_dat$summaryStat = "mean (per area) sum across depthclass"
   }
   
   goa_dat$varname = variable
@@ -219,7 +219,7 @@ summarize_netcdf <- function(this_romsfile, variables = c("temp"), average = TRU
   epoch <- "1900-01-01" #important, check that this is your correct start for ocean_time or the dates will be messed up
   
   goa_vals <- goa_vals %>% mutate(date=as.POSIXct(time_step, origin = epoch, tz='UTC')) %>%
-    arrange(variable,time_step)
+    arrange(varname,time_step)
   
   return(goa_vals)
 }
