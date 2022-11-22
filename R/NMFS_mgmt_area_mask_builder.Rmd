@@ -127,7 +127,7 @@ etopo_mask <- etopo_nmfs_sf[1,] # the main shelf polygon seems to be the first r
 Visualise.
 ```{r}
 ggplot()+
-  geom_sf(data = nmfs_mask, fill = NA, color = "blue")+
+  geom_sf(data = etopo_mask, fill = NA, color = "blue")+
   geom_sf(data = coast)+
   theme_minimal()+
   labs(title = "Depth mask (0-1000 m)")
