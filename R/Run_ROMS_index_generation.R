@@ -7,18 +7,22 @@ pacman::p_load(tidyverse, tidync, sf, rnaturalearth, raster, data.table, maps, m
 select <- dplyr::select
 
 ## Read in shape files of desired area.
-mask <- st_read("Data/Depth trimmed NMFS shapefiles/NMFS610-650.shp")
-st_area(mask)/1000^2 # NMFS management area km^2
+mask <- st_read("Data/NMFS management area shapefiles/gf95_nmfs.shp")
+
+# subset to NMFS areas of interest
+mask <- mask %>% filter(NMFS_AREA %in% c(610,620,630,640,650))%>% # subset to 610-650
+  filter(GF95_NMFS1 %in% c(186,194,259,585,870)) %>% # Removes inter-coastal in SE AK
+  select(NMFS_AREA, AREA) # area here seems to be in m2
 
 ## Import ROMS data
 # For GOA, we have grid information stored in a grid file, and the variables stored in the netCDF files.
-romsfile_vars <- "data/ROMS/monthly_averages/nep_hind_moave_2007_01.nc" # read one ROMS file for depth information - depth matching will be done once and not at every time step
-romsfile_grid <- "data/ROMS/NEP_grid_5a.nc"
+romsfile_vars <- "Data/ROMS/monthly_averages/nep_hind_moave_2017_01.nc" # read one ROMS file for depth information - depth matching will be done once and not at every time step
+romsfile_grid <- "Data/ROMS/NEP_grid_5a.nc"
 
 source("R/ROMS_coordinate_mapping.R") # Maps ROMS coordiantes to NMFS management areas
 source("R/ROMS_to_index_functions.R") # Functions to derive indices
 
-netcdf_files <- list.files('data/ROMS/monthly_averages/', full.names = TRUE)
+netcdf_files <- list.files('Data/ROMS/monthly_averages/', full.names = TRUE)
 
 
 ## Define variables to pull from ROMS
@@ -34,18 +38,21 @@ goa_averaged_vals <- roms_to_goa(netcdf_files = netcdf_files,
                         variables = average_vars,
                         min_depth = 0, max_depth = -1000,
                         average = TRUE)
-# NOTE: about 10% of the ROMS cells are deeper than 1000 m, after masking?
 
 goa_summed_vals <- roms_to_goa(netcdf_files = netcdf_files, 
                                  variables = summed_vars,
                                  min_depth = 0, max_depth = -1000,
-                                 average = TRUE)
+                                 average = FALSE)
 
-# plot for testing
-goa_averaged_vals %>%
-  filter(varname == "temp") %>%
-  ggplot(aes(x=date,y=value, group = depthclass, color = depthclass))+
-  geom_point()+
-  geom_line()+
-  theme_minimal()+
-  facet_wrap(~NMFS_AREA, scales='free')
+write.csv(goa_averaged_vals, 'nep_avg.csv', row.names = F)
+write.csv(goa_summed_vals, 'nep_sum.csv', row.names = F)
+
+
+# # plot for testing
+# goa_averaged_vals %>%
+#   filter(varname == "temp") %>%
+#   ggplot(aes(x=date,y=value, group = depthclass, color = depthclass))+
+#   geom_point()+
+#   geom_line()+
+#   theme_minimal()+
+#   facet_wrap(~NMFS_AREA, scales='free')
