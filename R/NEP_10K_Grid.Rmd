@@ -1,0 +1,127 @@
+---
+title: "NEP 10K ROMS grid"
+author: "Alberto Rovellini"
+date: "12/8/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+This document shows details on how handle the NEP 10K NetCDF grid file used to map physical variables to GOA-CLIM models. Motivation for this is that we discovered a mismatch between ROMS bathymetry and the 1000 m isobath of the mask that we obtained from clipping the NMFS areas shapefile with the [ETOPO depth raster](https://www.ngdc.noaa.gov/mgg/global/relief/ETOPO1/data/bedrock/cell_registered/netcdf/) (see `NMFS_mgmt_area_mask_builder.Rmd` for details). The mismatch occurred along the GOA continental slope, where the depth of ~10% of the ROMS points that were mapped to areas shallower than the 1000 m isobath was greater than 1000 m.
+
+We explored three possible reasons for this mismatch:
+
+1. We are using the wrong projection for the ROMS grid, mapping the rho points to incorrect spatial coordinates when we match the grid to the NMFS areas mask.
+2. We are not calculating the depth of the 42 layers correctly with our custom version of `angstroms::romshcoords`.
+3. There is a mismatch between the bathymetry datasets used by ROMS and by our NMFS mask.
+
+```{r}
+pacman::p_load(tidyverse, tidync, sf, rnaturalearth, raster, data.table, maps, mapdata, angstroms, viridis, tabularaster, dtplyr)
+select <- dplyr::select
+```
+
+This is the grid file for NEP 10K. Also read in the shapefile for the NMFS areas.
+```{r}
+romsfile_grid <- "../Data/ROMS/NEP_grid_5a.nc"
+roms_grid <- tidync(romsfile_grid)
+nmfs_areas <- read_sf('../Data/NMFS management area shapefiles/gf95_nmfs.shp')
+```
+
+# Projection
+
+Get variables. We do not need water velocity, so we can ignore u and v points. 
+```{r}
+# Grid info
+grid_variables <- hyper_grids(roms_grid) %>% # all available grids in the ROMS ncdf
+  pluck("grid") %>% # for each grid, pull out all the variables asssociated with that grid and make a reference table
+  purrr::map_df(function(x){
+    roms_grid %>% activate(x) %>% hyper_vars() %>% 
+      mutate(grd=x)
+  })
+grid_variables$name
+
+# Find appropriate ROMS ncdf grid for the rho points
+latlon_rhogrd <- grid_variables %>% filter(name=="lat_rho") %>% pluck('grd')
+# pull the lon/lats
+roms_rho <- roms_grid %>% 
+  activate(latlon_rhogrd) %>% 
+  hyper_tibble() %>% 
+  dplyr::select(lon_rho,lat_rho,xi_rho,eta_rho,h) %>% 
+  mutate(rhoidx=row_number()) # add index
+```
+
+Now turn the data to spatial. First, assign to the coordinates a generic CRS, like EPSG:4326. 
+```{r, fig.width=12, fig.height=10}
+# turn to spatial with crs 4326
+roms_sf <- roms_rho %>% st_as_sf(coords = c('lon_rho','lat_rho'), crs = 4326) #set as spatial data with a standard CRS
+
+ggplot()+
+  geom_sf(data = roms_sf, aes(color = -h))+
+  theme_bw()
+```
+
+Now view in the native projection from the grid. From al Hermann: *The values in the grid netcdf file indicate that the original grid was derived using a Lambert conformal conic projection. Reference latitudes are 40n and 60n; reference longitude is 210e.*
+```{r, fig.width=12, fig.height=10}
+lcc_crs <- st_crs("+proj=lcc +lat_1=40 +lat_2=60 +lon_0=210") # set CRS based on information from Al
+
+roms_lcc <- roms_sf %>% st_transform(crs = lcc_crs)
+
+ggplot()+
+  geom_sf(data = roms_lcc, aes(color = -h))+
+  theme_bw()
+```
+
+Now reproject to the CRS of the NMFS areas shapefile.
+```{r, fig.width=12, fig.height=10}
+roms_to_nmfs <- roms_lcc %>%
+  st_transform(crs = st_crs(nmfs_areas))
+
+ggplot()+
+  geom_sf(data=roms_to_nmfs, aes(color = -h))+
+  geom_sf(data=nmfs_areas, fill = NA, color = 'red')+
+  theme_bw()
+```
+
+And how would this compare to cutting out the LCC step?
+```{r, fig.width=12, fig.height=10}
+roms_sf %>%
+  st_transform(crs = st_crs(nmfs_areas)) %>%
+  ggplot()+
+  geom_sf(aes(color = -h))+
+  geom_sf(data=nmfs_areas, fill = NA, color = 'red')+
+  theme_bw()
+
+```
+
+In conclusion: When reprojecting lat and lon from the NEP 10K NetCDF grid, you first need to assign to them a generic CRS, like `EPSG:4326`. Then you can transform the grid (now a spatial object) to the target CRS. If you want to visualize the gird, you can project it to LCC with this string: `"+proj=lcc +lat_1=40 +lat_2=60 +lon_0=210"`. 
+
+In `ROMS_coordinate_mapping.Rmd` we assign EPSG:4326 to the coordinates of the rho points before reprojecting them to the CRS of the NMFS areas shapefile. So everything looks good there, and we can rule out cause 1. 
+
+# Depth
+
+The method we adapted from `angstroms` calculates depth of the ROMS layers that are identical to the values in the Z-grid file provided by Al Hermann, so we can rule out cause 2.
+
+So the most likely cause of the mismatch is a difference in the depth layers. The bathymetry used by ROMS is a composite, custom product documented [here](https://agupubs.onlinelibrary.wiley.com/doi/10.1029/2011JC007389) and summarized [here](http://research.cfos.uaf.edu/bathy/). The bathymetry raster we used to derive the 1000 m isobath is based on [ETOPO depth](https://www.ngdc.noaa.gov/mgg/global/relief/ETOPO1/data/bedrock/cell_registered/netcdf/). Besides, the 1000 m contour is jagged because it is obtained from dissolving the raster to polygons and aggregating cells of the same depth. So, the ETOPO-derived bathymetry that we used is coarse, and the mismatch along the steep GOA continental slope is plausible.
+
+To address this issue, we simply filter out ROMS points that have h>1000, abandoning the clipping of NMFS areas by 1000 m isobath. 
+
+Let's see what this looks like.
+```{r, fig.width=12, fig.height=6}
+nmfs_areas_goa <- nmfs_areas %>%
+  filter(NMFS_AREA %in% c(610,620,630,640,650))%>% # subset to 610-650
+  filter(GF95_NMFS1 %in% c(186,194,259,585,870)) # Removes inter-coastal in SE AK
+
+nmfs_bbox <- st_bbox(nmfs_areas_goa)
+
+roms_to_nmfs %>%
+  filter(h <= 1000) %>%
+  ggplot()+
+  geom_sf(aes(color = -h))+
+  geom_sf(data = nmfs_areas_goa, fill = NA, color = 'red')+
+  coord_sf(xlim = c(nmfs_bbox$xmin, nmfs_bbox$xmax), ylim = c(nmfs_bbox$ymin, nmfs_bbox$ymax))+
+  theme_bw()
+```
+
+No seamounts - ROMS depth is smoothed for stability. So this seems to be a viable solution.
