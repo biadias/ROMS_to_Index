@@ -27,7 +27,7 @@ roms_variables$name
 # Find appropriate ROMS ncdf grid for the rho points
 latlon_rhogrd <- grid_variables %>% filter(name=="lat_rho") %>% pluck('grd')
 # pull the lon/lats
-roms_rho <- roms_grid %>% activate(latlon_rhogrd) %>% hyper_tibble() %>% dplyr::select(lon_rho,lat_rho,xi_rho,eta_rho) %>% 
+roms_rho <- roms_grid %>% activate(latlon_rhogrd) %>% hyper_tibble() %>% dplyr::select(lon_rho,lat_rho,xi_rho,eta_rho,h) %>% 
   mutate(rhoidx=row_number()) # add index
 
 
@@ -42,16 +42,28 @@ append_xy_coords <- function(lonlatdat, xyproj=st_crs(mask), lon_col="lon_rho", 
 
 rhoxy<- append_xy_coords(roms_rho,lon_col="lon_rho",lat_col="lat_rho") %>% mutate(rhoidx=row_number())
 
+# Only keep rho points of depth <= 1000 m, since we are interested in the shelf
+rhoxy <- rhoxy %>% filter(h <= 1000)
+
 # Match ROMS and NMFS grid
 # Join rho points to the NMFS mask. Do a spatial join.
 rho_join <- mask %>% st_join(rhoxy) %>% na.omit()
 
 # Get range of ROMS coordinates that correspond with GOA geometry, to subset ROMS files and reduce memory chokes
+# these will be needed in interpolate_var for the first query from the NetCDF and will be further filtered after that
 min_xi_rho <- min(rho_join$xi_rho, na.rm = TRUE)
 max_xi_rho <- max(rho_join$xi_rho, na.rm = TRUE)
 min_eta_rho <- min(rho_join$eta_rho, na.rm = TRUE)
 max_eta_rho <- max(rho_join$eta_rho, na.rm = TRUE)
 
+# get exact set of rho points based on depth subsetting and overlap with NMFS areas
+xi_eta_set <- rho_join %>% 
+  st_set_geometry(NULL) %>% 
+  select(xi_rho, eta_rho) %>% 
+  distinct() %>%
+  mutate(xi_eta = paste(xi_rho, eta_rho, sep = '_')) %>% 
+  pull(xi_eta)
+  
 
 # Set up depths
 # Using a custom version of Mike Sumner's angstroms::romshcoords(), because GOA ROMS have grid information in a separate file.
@@ -221,4 +233,17 @@ romsdepthsdf <- tabularaster::as_tibble(romsdepths,dim=F) %>%
   group_by(cellindex,xi_rho,eta_rho) %>% 
   nest(romsdepth=c(romsdepth)) %>% ungroup() %>% 
   mutate(romsdepth=purrr::map(romsdepth,function(x)x[['romsdepth']])) %>%
-  filter(between(xi_rho, min_xi_rho, max_xi_rho) & between(eta_rho, min_eta_rho, max_eta_rho))
+  mutate(xi_eta = paste(xi_rho, eta_rho, sep = '_')) %>%
+  filter(xi_eta %in% xi_eta_set) %>%
+  select(-xi_eta)
+
+# # view
+# romsdepthsdf %>%
+#   left_join(rhoxy, by = c('xi_rho', 'eta_rho')) %>%
+#   select(lon_rho, lat_rho, h) %>%
+#   st_as_sf(coords = c('lon_rho','lat_rho'), crs = 4326) %>%
+#   st_transform(st_crs(mask)) %>%
+#   ggplot()+
+#   geom_sf(aes(color = -h))
+# 
+# # looks sensible - we get a set of points based on h (ROMS smoothed depth) and spatial overlap with the NMFS areas
