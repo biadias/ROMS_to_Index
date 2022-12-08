@@ -40,8 +40,8 @@ interpolate_var <- function(variable, time_step, this_roms_vars, this_roms_varia
   # do this step conditional to join with the appropriate depth data frame depending on the variable
   # if variable is horizontal velocity
   
-  #variable = "temp"
-  #time_step = 3377894400
+  # variable = "temp"
+  # time_step = 3377894400
   
   grd <- this_roms_variables %>% filter(name==variable) %>% pluck('grd')
   
@@ -50,6 +50,12 @@ interpolate_var <- function(variable, time_step, this_roms_vars, this_roms_varia
                  xi_rho = between(xi_rho, min_xi_rho, max_xi_rho), 
                  eta_rho = between(eta_rho, min_eta_rho, max_eta_rho),
                  ocean_time = ocean_time == time_step)
+  
+  # filter based on xi and eta of the points inside NMFS areas and with h <= 1000
+  dat <- dat %>%
+    mutate(xi_eta = paste(xi_rho, eta_rho, sep = '_')) %>%
+    filter(xi_eta %in% xi_eta_set) %>%
+    select(-xi_eta)
   
   interp_dat <- dat %>% 
     dplyr::select(xi_rho,eta_rho,!!variable) %>% 
@@ -76,24 +82,33 @@ interpolate_var <- function(variable, time_step, this_roms_vars, this_roms_varia
   
   #TODO: spit a warning if for any rho point temp at the surface is lower than at depth - may be sign of depths from ROMS being inverted
   
-  # Double check how many ROMS cells are deeper than 1000 after masking
+  # # Double check how many ROMS cells are deeper than 1000 after masking
   # check <- interp_dat %>%
   #   group_by(cellindex) %>%
   #   summarise(maxdepth = max(abs(depth))) %>% as.data.frame()
   # sum(check$maxdepth > abs(max_depth))/nrow(check)
   # hist(check$maxdepth)
   
+  # # Double check how many ROMS cells are deeper than 1000 after masking
+  check <- interp_dat %>%
+    group_by(cellindex) %>%
+    summarise(maxdepth = max(abs(depth))) %>% 
+    as.data.frame() %>%
+    pull(maxdepth)
+    
+  if(length(check[check>abs(max_depth) | check<abs(min_depth)]) > 0) stop("Some depths of rho points are outside the accepted range")
+
   # Define depth class and remove areas with depth over max_depth
   interp_dat <- interp_dat %>%
     group_by(cellindex) %>%
     mutate(maxdepth = max(abs(depth)),
            depthclass = case_when(
-             abs(depth) <= 10 ~ "Surface",
-             abs(depth) >= (maxdepth - 10) ~ "Bottom",
-             abs(depth) > 10 & abs(depth) < (maxdepth - 10) ~ "Midwater"
+             abs(depth) <= 10 ~ "Surface", # this means that for very shallow points (h = 10) we only get surface variables
+             abs(depth) == maxdepth ~ "Bottom",
+             abs(depth) > 10 & abs(depth) < maxdepth ~ "Midwater"
            )) %>%
     ungroup() %>%
-    filter(maxdepth <= abs(max_depth) & maxdepth >= abs(min_depth))
+    filter(maxdepth <= abs(max_depth) & maxdepth >= abs(min_depth)) # now just a sanity check but should no longer be needed
   
   # Calculate summary statistics over depth and spatial range
   if(average){ # For state variables, take the average over the water column. 
@@ -191,6 +206,7 @@ interpolate_var <- function(variable, time_step, this_roms_vars, this_roms_varia
 #'
 summarize_netcdf <- function(this_romsfile, variables = c("temp"), average = TRUE, min_depth = 0, max_depth = -1000){
   # read roms netcdf file
+  
   this_roms_vars <- tidync(this_romsfile)
   this_roms_variables <- hyper_grids(this_roms_vars) %>% # all available grids in the ROMS ncdf
     pluck("grid") %>% # for each grid, pull out all the variables asssociated with that grid and make a reference table
