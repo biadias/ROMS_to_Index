@@ -18,6 +18,7 @@ interp_foo <- function(romsdepths,romsvar) {
 
 #' Interpolates ROMS variable across depths
 #'
+#' @param romsfile path to the ROMS NetCDF file
 #' @param variable variable name in ROMS netcdf file (e.g. temp, salt, etc)
 #' @param time_step oceanographic time step (e.g. 3377894400)
 #' @param this_roms_vars tidync of ROMS netcdf
@@ -33,15 +34,13 @@ interp_foo <- function(romsdepths,romsvar) {
 #' @export
 #' 
 #' 
-interpolate_var <- function(variable, time_step, this_roms_vars, this_roms_variables, min_depth = 0, max_depth = -1000, average = TRUE){
+interpolate_var <- function(romsfile, variable, time_step, this_roms_vars, this_roms_variables, min_depth = 0, max_depth = -1000, average = TRUE){
   
-  # pull the env data
-  # interpolate the env data
-  # do this step conditional to join with the appropriate depth data frame depending on the variable
-  # if variable is horizontal velocity
+  #print(paste("doing", variable, "for", romsfile, sep = " "))
   
-  # variable = "temp"
-  # time_step = 3377894400
+  #get unit
+  this_unit <- ncmeta::nc_atts(romsfile, variable) %>% filter(name == 'units') %>% tidyr::unnest(cols = c(value)) %>% pull(value)
+  if(length(this_unit)==0){this_unit <- NA} # or else salt will break it
   
   grd <- this_roms_variables %>% filter(name==variable) %>% pluck('grd')
   
@@ -188,6 +187,7 @@ interpolate_var <- function(variable, time_step, this_roms_vars, this_roms_varia
   
   goa_dat$varname = variable
   goa_dat$time_step = time_step
+  goa_dat$unit = this_unit
   return(goa_dat)
 }
 
@@ -224,7 +224,8 @@ summarize_netcdf <- function(this_romsfile, variables = c("temp"), average = TRU
     set_names(c('variable','time_step'))
   
   # read variables and carry out interplation
-  goa_vals <- apply(var_time_combos, 1, function(x) interpolate_var(variable = as.character(x[1]), 
+  goa_vals <- apply(var_time_combos, 1, function(x) interpolate_var(romsfile = this_romsfile,
+                                                                    variable = as.character(x[1]), 
                                                                     time_step = as.numeric(x[2]),
                                                                     this_roms_vars, this_roms_variables,
                                                                     min_depth = min_depth, max_depth = max_depth, 
