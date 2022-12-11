@@ -226,7 +226,7 @@ summarize_netcdf <- function(this_romsfile, variables = c("temp"), average = TRU
   # read variables and carry out interplation
   goa_vals <- apply(var_time_combos, 1, function(x) interpolate_var(romsfile = this_romsfile,
                                                                     variable = as.character(x[1]), 
-                                                                    time_step = as.numeric(x[2]),
+                                                                    time_step = roms_time,
                                                                     this_roms_vars, this_roms_variables,
                                                                     min_depth = min_depth, max_depth = max_depth, 
                                                                     average = average))
