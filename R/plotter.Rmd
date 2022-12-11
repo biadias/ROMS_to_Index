@@ -1,0 +1,196 @@
+---
+title: "Viewer of ROMS NEP 10K indexes for GOA-CLIM"
+output:
+  html_document:
+    toc: yes
+    toc_float: yes
+    code_folding: hide
+  pdf_document:
+    toc: yes
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE,warnings=FALSE)
+library(tidyverse)
+library(tidync)
+library(magrittr)
+library(cowplot)
+library(here)
+library(viridis)
+library(reshape2)
+library(RColorBrewer)
+
+# ggplot theme
+plot_theme <-   theme_minimal()+
+  theme(text=element_text(family="sans",size=12,color="black"),
+        legend.text = element_text(size=12),
+        axis.text.x = element_text(angle = 40, vjust = 0.5, hjust=1),
+        axis.title=element_text(family="sans",size=14,color="black"),
+        axis.text=element_text(family="sans",size=12,color="black"),
+        panel.grid.major = element_line(color="gray50",linetype=3))
+theme_set(plot_theme)
+
+options(dplyr.summarise.inform = FALSE)
+```
+
+```{r}
+nep_avg_hind <- read.csv('../Data/output_from_loon/nep_avg_hind.csv')
+nep_sum_hind <- read.csv('../Data/output_from_loon/nep_sum_hind.csv')
+
+nep_avg_hist <- read.csv('../Data/output_from_loon/nep_avg_wb_hist.csv')
+nep_sum_hist <- read.csv('../Data/output_from_loon/nep_sum_wb_hist.csv')
+```
+
+```{r abun fxn,include=F,echo=F}
+# Hindcast averages 
+plot_avg_hind <- function(this_var){
+  # get the attributes associated with each functional group
+  
+  this_dat <- nep_avg_hind %>%
+    filter(varname == this_var, depthclass %in% c('Surface', 'Bottom')) 
+  
+  # get unit
+  this_unit <- this_dat %>% pull(unit) %>% unique()
+  
+  plot_out <- this_dat %>%
+    ggplot(aes(x = as.Date(date), y = value, group = depthclass, color = depthclass))+
+    geom_line(linewidth = 1)+
+    #geom_point()+
+    scale_color_manual(values = c('navy', 'firebrick'))+
+    plot_theme+
+    labs(x = '', y = this_unit)+
+    facet_wrap(~NMFS_AREA, scales = 'free', ncol = 1)
+  
+  return(plot_out)
+}
+
+# Hindcast sums 
+plot_sum_hind <- function(this_var){
+  # get the attributes associated with each functional group
+  
+  this_dat <- nep_sum_hind %>%
+    filter(varname == this_var, depthclass == 'All') 
+  
+  # get unit
+  this_unit <- this_dat %>% pull(unit) %>% unique()
+  
+  plot_out <- this_dat %>%
+    ggplot(aes(x = as.Date(date), y = value, group = depthclass, color = depthclass))+
+    geom_line(linewidth = 1)+
+    #geom_point()+
+    scale_color_manual(values = c('navy'))+
+    plot_theme+
+    labs(x = '', y = this_unit)+
+    facet_wrap(~NMFS_AREA, scales = 'free', ncol = 1)
+  
+  return(plot_out)
+}
+
+# Historical runs averages 
+plot_avg_hist <- function(this_var){
+  # get the attributes associated with each functional group
+  
+  this_dat <- nep_avg_hist %>%
+    filter(varname == this_var, depthclass %in% c('Surface', 'Bottom')) 
+  
+  # get unit
+  this_unit <- this_dat %>% pull(unit) %>% unique()
+  
+  plot_out <- this_dat %>%
+    ggplot(aes(x = as.Date(date), y = value, group = depthclass, color = depthclass))+
+    geom_line(linewidth = 1)+
+    #geom_point()+
+    scale_color_manual(values = c('navy', 'firebrick'))+
+    plot_theme+
+    labs(x = '', y = this_unit)+
+    facet_wrap(~NMFS_AREA, scales = 'free', ncol = 1)
+  
+  return(plot_out)
+}
+
+# Historical runs sums 
+plot_sum_hist <- function(this_var){
+  # get the attributes associated with each functional group
+  
+  this_dat <- nep_sum_hist %>%
+    filter(varname == this_var, depthclass == 'All') 
+  
+  # get unit
+  this_unit <- this_dat %>% pull(unit) %>% unique()
+  
+  plot_out <- this_dat %>%
+    ggplot(aes(x = as.Date(date), y = value, group = depthclass, color = depthclass))+
+    geom_line(linewidth = 1)+
+    #geom_point()+
+    scale_color_manual(values = c('navy'))+
+    plot_theme+
+    labs(x = '', y = this_unit)+
+    facet_wrap(~NMFS_AREA, scales = 'free', ncol = 1)
+  
+  return(plot_out)
+}
+```
+
+```{r calc plots}
+# Here we calculate and store the actual plots
+
+# hind avg
+varnames_avg_hind <- nep_avg_hind %>% pull(varname) %>% unique()
+varplots_avg_hind <- purrr::map(varnames_avg_hind,~plot_avg_hind(.))
+
+# hind sum
+varnames_sum_hind <- nep_sum_hind %>% pull(varname) %>% unique()
+varplots_sum_hind <- purrr::map(varnames_sum_hind,~plot_sum_hind(.))
+
+# hist avg
+varnames_avg_hist <- nep_avg_hist %>% pull(varname) %>% unique()
+varplots_avg_hist <- purrr::map(varnames_avg_hist,~plot_avg_hist(.))
+
+# hist sum
+varnames_sum_hist <- nep_sum_hist %>% pull(varname) %>% unique()
+varplots_sum_hist <- purrr::map(varnames_sum_hist,~plot_sum_hist(.))
+```
+
+# NEP 10K hindcast (2000-2020) - averages {.tabset .tabset-pills}
+
+```{r avghind,fig.height=20,fig.width=10,results='asis'}
+for(i in 1:length(varplots_avg_hind)){
+  cat("  \n##",  varnames_avg_hind[i],"  \n")
+  print(varplots_avg_hind[[i]]) 
+  cat("  \n")
+}
+```
+
+# NEP 10K hindcast (2000-2020) - total {.tabset .tabset-pills}
+
+##TODO: check units
+
+```{r sumhind,fig.height=12,fig.width=10,results='asis'}
+for(i in 1:length(varplots_sum_hind)){
+  cat("  \n##",  varnames_sum_hind[i],"  \n")
+  print(varplots_sum_hind[[i]]) 
+  cat("  \n")
+}
+```
+
+# NEP 10K historical runs (1980-2014) - averages {.tabset .tabset-pills}
+
+```{r avghist,fig.height=20,fig.width=10,results='asis'}
+for(i in 1:length(varplots_avg_hist)){
+  cat("  \n##",  varnames_avg_hist[i],"  \n")
+  print(varplots_avg_hist[[i]]) 
+  cat("  \n")
+}
+```
+
+# NEP 10K historical runs (1980-2014) - total {.tabset .tabset-pills}
+
+##TODO: check units
+
+```{r sumhist,fig.height=12,fig.width=10,results='asis'}
+for(i in 1:length(varplots_sum_hist)){
+  cat("  \n##",  varnames_sum_hist[i],"  \n")
+  print(varplots_sum_hist[[i]]) 
+  cat("  \n")
+}
+```
