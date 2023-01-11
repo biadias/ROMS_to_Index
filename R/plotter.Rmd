@@ -1,5 +1,5 @@
 ---
-title: "Viewer of ROMS NEP 10K indexes for GOA-CLIM"
+title: "Viewer of ROMS NEP 10K indexes for GOA-CLIM - past runs"
 output:
   html_document:
     toc: yes
@@ -73,6 +73,7 @@ plot_sum_hind <- function(this_var){
   
   # get unit
   this_unit <- this_dat %>% pull(unit) %>% unique()
+  this_unit <- gsub('3', '2', this_unit)
   
   plot_out <- this_dat %>%
     ggplot(aes(x = as.Date(date), y = value, group = depthclass, color = depthclass))+
@@ -117,6 +118,7 @@ plot_sum_hist <- function(this_var){
   
   # get unit
   this_unit <- this_dat %>% pull(unit) %>% unique()
+  this_unit <- gsub('3', '2', this_unit)
   
   plot_out <- this_dat %>%
     ggplot(aes(x = as.Date(date), y = value, group = depthclass, color = depthclass))+
@@ -163,8 +165,6 @@ for(i in 1:length(varplots_avg_hind)){
 
 # NEP 10K hindcast (2000-2020) - total {.tabset .tabset-pills}
 
-##TODO: check units
-
 ```{r sumhind,fig.height=12,fig.width=10,results='asis'}
 for(i in 1:length(varplots_sum_hind)){
   cat("  \n##",  varnames_sum_hind[i],"  \n")
@@ -184,8 +184,6 @@ for(i in 1:length(varplots_avg_hist)){
 ```
 
 # NEP 10K historical runs (1980-2014) - total {.tabset .tabset-pills}
-
-##TODO: check units
 
 ```{r sumhist,fig.height=12,fig.width=10,results='asis'}
 for(i in 1:length(varplots_sum_hist)){

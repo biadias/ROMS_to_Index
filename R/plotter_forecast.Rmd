@@ -1,0 +1,194 @@
+---
+title: "Viewer of ROMS NEP 10K indexes for GOA-CLIM - projections"
+output:
+  html_document:
+    toc: yes
+    toc_float: yes
+    code_folding: hide
+  pdf_document:
+    toc: yes
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE,warnings=FALSE)
+library(tidyverse)
+library(tidync)
+library(magrittr)
+library(cowplot)
+library(here)
+library(viridis)
+library(reshape2)
+library(RColorBrewer)
+
+# ggplot theme
+plot_theme <-   theme_minimal()+
+  theme(text=element_text(family="sans",size=12,color="black"),
+        legend.text = element_text(size=12),
+        axis.text.x = element_text(angle = 40, vjust = 0.5, hjust=1),
+        axis.title=element_text(family="sans",size=14,color="black"),
+        axis.text=element_text(family="sans",size=12,color="black"),
+        panel.grid.major = element_line(color="gray50",linetype=3))
+theme_set(plot_theme)
+
+options(dplyr.summarise.inform = FALSE)
+```
+
+```{r}
+nep_avg_126 <- read.csv('../Data/output_from_loon/nep_avg_wb_ssp126.csv')
+nep_sum_126 <- read.csv('../Data/output_from_loon/nep_sum_wb_ssp126.csv')
+
+nep_avg_585 <- read.csv('../Data/output_from_loon/nep_avg_wb_ssp585.csv')
+nep_sum_585 <- read.csv('../Data/output_from_loon/nep_sum_wb_ssp585.csv')
+```
+
+```{r abun fxn,include=F,echo=F}
+# ssp126 averages 
+plot_avg_126 <- function(this_var){
+  # get the attributes associated with each functional group
+  
+  this_dat <- nep_avg_126 %>%
+    filter(varname == this_var, depthclass %in% c('Surface', 'Bottom')) 
+  
+  # get unit
+  this_unit <- this_dat %>% pull(unit) %>% unique()
+  
+  plot_out <- this_dat %>%
+    ggplot(aes(x = as.Date(date), y = value, group = depthclass, color = depthclass))+
+    geom_line(linewidth = 1)+
+    #geom_point()+
+    scale_color_manual(values = c('navy', 'firebrick'))+
+    plot_theme+
+    labs(x = '', y = this_unit)+
+    facet_wrap(~NMFS_AREA, scales = 'free', ncol = 1)
+  
+  return(plot_out)
+}
+
+# ssp126 sums 
+plot_sum_126 <- function(this_var){
+  # get the attributes associated with each functional group
+  
+  this_dat <- nep_sum_126 %>%
+    filter(varname == this_var, depthclass == 'All') 
+  
+  # get unit
+  this_unit <- this_dat %>% pull(unit) %>% unique()
+  this_unit <- gsub('3', '2', this_unit)
+  
+  plot_out <- this_dat %>%
+    ggplot(aes(x = as.Date(date), y = value, group = depthclass, color = depthclass))+
+    geom_line(linewidth = 1)+
+    #geom_point()+
+    scale_color_manual(values = c('navy'))+
+    plot_theme+
+    labs(x = '', y = this_unit)+
+    facet_wrap(~NMFS_AREA, scales = 'free', ncol = 1)
+  
+  return(plot_out)
+}
+
+# ssp585 averages 
+plot_avg_585 <- function(this_var){
+  # get the attributes associated with each functional group
+  
+  this_dat <- nep_avg_585 %>%
+    filter(varname == this_var, depthclass %in% c('Surface', 'Bottom')) 
+  
+  # get unit
+  this_unit <- this_dat %>% pull(unit) %>% unique()
+  
+  plot_out <- this_dat %>%
+    ggplot(aes(x = as.Date(date), y = value, group = depthclass, color = depthclass))+
+    geom_line(linewidth = 1)+
+    #geom_point()+
+    scale_color_manual(values = c('navy', 'firebrick'))+
+    plot_theme+
+    labs(x = '', y = this_unit)+
+    facet_wrap(~NMFS_AREA, scales = 'free', ncol = 1)
+  
+  return(plot_out)
+}
+
+# ssp585 sums 
+plot_sum_585 <- function(this_var){
+  # get the attributes associated with each functional group
+  
+  this_dat <- nep_sum_585 %>%
+    filter(varname == this_var, depthclass == 'All') 
+  
+  # get unit
+  this_unit <- this_dat %>% pull(unit) %>% unique()
+  this_unit <- gsub('3', '2', this_unit)
+  
+  plot_out <- this_dat %>%
+    ggplot(aes(x = as.Date(date), y = value, group = depthclass, color = depthclass))+
+    geom_line(linewidth = 1)+
+    #geom_point()+
+    scale_color_manual(values = c('navy'))+
+    plot_theme+
+    labs(x = '', y = this_unit)+
+    facet_wrap(~NMFS_AREA, scales = 'free', ncol = 1)
+  
+  return(plot_out)
+}
+```
+
+```{r calc plots}
+# Here we calculate and store the actual plots
+
+# 126 avg
+varnames_avg_126 <- nep_avg_126 %>% pull(varname) %>% unique()
+varplots_avg_126 <- purrr::map(varnames_avg_126,~plot_avg_126(.))
+
+# 126 sum
+varnames_sum_126 <- nep_sum_126 %>% pull(varname) %>% unique()
+varplots_sum_126 <- purrr::map(varnames_sum_126,~plot_sum_126(.))
+
+# 585 avg
+varnames_avg_585 <- nep_avg_585 %>% pull(varname) %>% unique()
+varplots_avg_585 <- purrr::map(varnames_avg_585,~plot_avg_585(.))
+
+# 585 sum
+varnames_sum_585 <- nep_sum_585 %>% pull(varname) %>% unique()
+varplots_sum_585 <- purrr::map(varnames_sum_585,~plot_sum_585(.))
+```
+
+# NEP 10K projections SSP126 (2015-2099) - averages {.tabset .tabset-pills}
+
+```{r avg126,fig.height=20,fig.width=10,results='asis'}
+for(i in 1:length(varplots_avg_126)){
+  cat("  \n##",  varnames_avg_126[i],"  \n")
+  print(varplots_avg_126[[i]]) 
+  cat("  \n")
+}
+```
+
+# NEP 10K projections SSP126 (2015-2099) - total {.tabset .tabset-pills}
+
+```{r sum126,fig.height=12,fig.width=10,results='asis'}
+for(i in 1:length(varplots_sum_126)){
+  cat("  \n##",  varnames_sum_126[i],"  \n")
+  print(varplots_sum_126[[i]]) 
+  cat("  \n")
+}
+```
+
+# NEP 10K projections SSP585 (2015-2099) - averages {.tabset .tabset-pills}
+
+```{r avg585,fig.height=20,fig.width=10,results='asis'}
+for(i in 1:length(varplots_avg_585)){
+  cat("  \n##",  varnames_avg_585[i],"  \n")
+  print(varplots_avg_585[[i]]) 
+  cat("  \n")
+}
+```
+
+# NEP 10K projections SSP585 (2015-2099) - total {.tabset .tabset-pills}
+
+```{r sum585,fig.height=12,fig.width=10,results='asis'}
+for(i in 1:length(varplots_sum_585)){
+  cat("  \n##",  varnames_sum_585[i],"  \n")
+  print(varplots_sum_585[[i]]) 
+  cat("  \n")
+}
+```
