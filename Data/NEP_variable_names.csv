@@ -1,0 +1,23 @@
+Variable,Units,NEP name
+Ammonium,mmol N m^-3,NH4
+detritus concentration,mg C m^-3,Det
+euphausiid concentration,mg C m^-3,Eup
+euphausiid net production rate,mg C m^-3 d^-1,prod_Eup
+Iron concentration,micromol Fe m-3,Iron
+Large copepod concentration,mg C m^-3,NCa
+Large copepod production rate,mg C m^-3 d^-1,prod_NCa
+Large microzooplankton concentration,mg C m^-3,MZL
+Large microzooplankton production rate,mg C m^-3 d^-1,prod_MZL
+Large phytoplankton concentration,mg C m^-3,PhL
+Large phytoplankton production rate,mg C m^-3 d^-1,prod_PhL
+Time-averaged f ratio for large phytoplankton,,frat_PhL
+Nitrate,mmol N m^-3,NO3
+Salinity,PSU,salt
+Small copepod concentration,mg C m^-3,Cop
+Small copepod net production rate,mg C m^-2 d^-1,prod_Cop
+Small microzooplankton concentration,mg C m^-3,MZS
+Small microzooplankton production rate,mg C m^-3 d^-1,prod_MZS
+Small phytoplankton concentration,mg C m^-3,PhS
+Small phytoplankton production rate,mg C m^-3 d^-1,prod_PhS
+Time-averaged f ratio for small phytoplankton,,frat_PhS
+Temperature,Celcius,temp

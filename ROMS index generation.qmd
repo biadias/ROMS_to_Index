@@ -1,0 +1,218 @@
+---
+title: "Delta correction and gam smooth"
+author: "Grant Adams"
+format: docx
+editor: visual
+---
+
+## Overview
+
+This quarto doc overviews the process for making environmental indices from the ROMS NEP data including: data overview, index creation, and delta correction. We don't proved generic functions because each GOA-CLIM modeler may have indices specific to a particular spatial and temporal domain. We therefore provide an example rubric that folks can copy and derive their desired indices.
+
+## Data overview
+
+Projections of environmental variables biomass are derived from a downscaled Intergovernmental Panel on Climate Change (IPCC) projection model from the coupled model intercomparison project (CMIP): GFDL-ESM2M. The IPCC projection model was downscaled using the North East Pacific (NEP) Regional Ocean Modeling System (ROMS) developed for the Gulf of Alaska.
+
+ROMS simulations are referred to as the following:
+
+-   **hindcast**: representing model spinup (2000 to 2020),
+
+-   **projection**: GFDL-ESM2M downscaled projection (2015 to 2099)
+
+-   **historical**: representing the final year of the spinup forced with observed
+    oceanographic conditions to better represent historical conditions (1980 to 2014).
+
+Variables from ROMS simulations averaged for each layer and grid cell on a monthly time scale were averaged or summed across the following vertical distributions:
+
+-   Surface (from 0 to 10 m depth)
+
+-   Bottom (from bottom to 10 m from bottom)
+
+-   Midwater (from 10 m depth to 10 m from bottom)
+
+The averaged for each NMFS management area to the 1,000 m isobath (areas are calculated from `st_area` in the `sf` package):
+
+-   610 (area = 63986698621 $m^2$)
+
+-   620 (area = 69583703140 $m^2$)
+
+-   630 (area = 105918077937 $m^2$)
+
+-   640 (area = 37270389681 $m^2$)
+
+-   650 (area = 43952466109 $m^2$)
+
+-   All areas
+
+The "raw" monthly data are located in the **"/Data/NEP_10k_indices"** folder. They represent the monthly indices either averaged across each depth and spatial domain ("nep_avg\_...") or summed across each depth domain and then averaged across the spatial domain ("nep_sum...").
+
+## Index derivation
+
+Environmental indices can be derived for each modelers following their specific needs. We don't develop all indices here as individual modeler's needs may vary. But, indices integrated across each spatial NMFS management area should be area weighted using the following areas.
+
+## Delta correction overview
+
+Delta correction is done to correct for shifts in the time series between the hindcast and projection. For normally distributed variables (\*Y\*):
+
+$$
+X^{proj'}_t=\bar{X}^{hind}_{\bar{T}}+
+\left(\frac{\sigma^{hind}_{\bar{T}}}{\sigma^{hist}_{\bar{T}}} * 
+\left(X^{proj}_t-\bar{X}_{\bar{T}}^{hist} \right)\right)
+$$
+
+where $X^{proj'}_t$ is the bias corrected projection index in time-step \$t\$, $\bar{X}^{hind}_{\bar{T}}$ is the average index value from the hindcast during reference period $T$, $
+
+\sigma^{hind}_{\bar{T}}$ is the standard deviation of the index from the hindcast during the reference period, $\sigma^{hist}_{\bar{T}}$ is the standard deviation of the index from the historical run during the reference period, $X^{proj}_t$ is the non bias-corrected projection index, $\bar{X}_{\bar{T}}^{hist}$ is the average value from historical run during the reference period.
+
+For log-normally distributed variables the formula can be adjusted as follows:
+
+$$
+X^{proj'}_t=\exp\left(\bar{logX}^{hind}_{\bar{T}}+
+\left(\frac{\sigma^{hind}_{\bar{T}}}{\sigma^{hist}_{\bar{T}}} * 
+\left(logX^{proj}_t-\bar{logX}_{\bar{T}}^{hist} \right)\right)\right)
+$$
+
+where $T$, $
+
+\sigma^{hind}_{\bar{T}}$ is the standard deviation of the log index from the hindcast during the reference period, $\sigma^{hist}_{\bar{T}}$ is the standard deviation of the log indext from the histroical run during the reference period.
+
+Because the smallest time step in month, the mean and variance terms should be calculated as follows:
+
+-   Monthly indices: time-step $t$ should be year $y$ and month $m$ (e.g. $t=y,m$)
+
+## Variables in ROMS NEP
+
+```{r}
+library(kableExtra)
+nep_vars <- read.csv("Data/NEP_variable_names.csv")
+kable(nep_vars)
+```
+
+## Developing an index in R
+
+Load packages and functions
+
+```{r}
+# install.packages("pacman")
+pacman::p_load(mgcv, dplyr, lubridate, ggplot2)
+source("R/Delta_correction.R")
+```
+
+Load data
+
+```{r}
+# Load data averaged across depth and strata
+nep_hind <- read.csv("Data/NEP_10k_indices/nep_avg_hind.csv")
+nep_hind$simulation = "hindcast"
+
+nep_hist <- read.csv("Data/NEP_10k_indices/nep_avg_wb_hist.csv")
+nep_hist$simulation = "historical"
+
+nep_ssp125 <- read.csv("Data/NEP_10k_indices/nep_avg_wb_ssp126.csv")
+nep_ssp125$simulation = "ssp125"
+
+nep_585 <- read.csv("Data/NEP_10k_indices/nep_avg_wb_ssp585.csv")
+nep_585$simulation = "ssp585"
+
+# Combine in list
+roms_avg_data <- do.call(rbind, list(nep_hind, nep_hist, nep_ssp125, nep_585))
+
+# Add time and date information
+roms_avg_data <- roms_avg_data %>%
+  mutate(
+    date = lubridate::as_date(date),
+    month = lubridate::month(date),
+         year = lubridate::year(date))
+```
+
+**Example indices 1:** monthly index of sea surface temperature across all spatial strata
+
+```{r}
+# Run bias correction for all variables 
+# - rbinds bias-corrected projection to historical run
+# - SSP125
+ssp125_biascorrected <- delta_correction(
+    hindcast = roms_avg_data %>% filter(simulation == "hindcast"),
+    historical = roms_avg_data %>% filter(simulation == "historical"),
+    projection = roms_avg_data %>% filter(simulation == "ssp125"),
+    ref_yrs = 2000:2014, # Overlap years for historical and hindcast ROMS
+    lognormal = FALSE)
+
+# - SSP585
+ssp585_biascorrected <- delta_correction(
+  hindcast = roms_avg_data %>% filter(simulation == "hindcast"),
+  historical = roms_avg_data %>% filter(simulation == "historical"),
+  projection = roms_avg_data %>% filter(simulation == "ssp585"),
+  ref_yrs = 2000:2014, # Overlap years for historical and hindcast ROMS
+  lognormal = FALSE)
+
+# Extract variable of interest
+goa_SST_ssp125 <- ssp125_biascorrected %>%
+  filter(varname == "temp" & depthclass == "Surface" & NMFS_AREA == "All") %>%
+  mutate(simulation = "ssp125")
+
+goa_SST_ssp585 <- ssp585_biascorrected %>%
+  filter(varname == "temp" & depthclass == "Surface" & NMFS_AREA == "All") %>%
+  mutate(simulation = "ssp585")
+
+# Plot it
+ggplot(rbind(goa_SST_ssp125, goa_SST_ssp585), aes(date, value_dc)) + 
+  geom_line() + 
+  facet_wrap(~simulation) + ylab("SST (celcius)") + xlab("Year-Month")
+```
+
+**Example indices 2:** seasonal sea surface temperature across all spatial strata
+
+```{r}
+# Take monthlies and average from SSP125
+seasonal_sst_ssp125 <- goa_SST_ssp125 %>%
+  mutate(season = case_when(
+    month %in% c(3,4,5) ~ "spring",
+    month %in% c(11,12,1,2) ~ "winter",
+    month %in% c(6,7,8) ~ "summer",
+    month %in% c(9,10) ~ "fall",
+  )) %>%
+  group_by(NMFS_AREA, simulation, varname, year, season) %>%
+  summarise(value_dc = mean(value_dc))
+
+# Plot it
+ggplot(seasonal_sst_ssp125, aes(year, value_dc, colour = season)) + geom_line() +
+  ylab("SST (celcius)") + xlab("Year")
+```
+
+**Example index 3:** seasonal small copepod biomass spatial strata 610 and 620 for SSP585 at the surface
+
+```{r}
+# Extract small copepod for desired area
+goa_cop_ssp125 <- ssp585_biascorrected %>%
+  filter(varname == "Cop" & depthclass == "Surface" & NMFS_AREA %in% c(610, 620)) %>%
+  mutate(simulation = "ssp585")
+
+# Convert to biomass
+# - Units of Cop are mg C m^-3
+# - Area is in m^2 * 10 m deep
+# - Final units will be tonne
+goa_cop_ssp125 <- goa_cop_ssp125 %>%
+  mutate(Cop_biom = case_when(
+    NMFS_AREA == "610" ~ 63986698621 * 10 * value * 1e-9,
+# 610 area = 63986698621 m^2
+    NMFS_AREA == "620" ~ 69583703140 * 10 * value * 1e-9 # 620 area = 69583703140 m^2
+  ))
+
+# Take mean fall 
+goa_cop_ssp125 <- goa_cop_ssp125 %>%
+  group_by(year, month) %>%
+  summarise(Cop_biom = sum(Cop_biom)) %>% # Sum biomass across 610 and 620
+  mutate(season = case_when(
+    month %in% c(3,4,5) ~ "spring",
+    month %in% c(11,12,1,2) ~ "winter",
+    month %in% c(6,7,8) ~ "summer",
+    month %in% c(9,10) ~ "fall",
+  )) %>%
+  group_by(year, season) %>%
+  summarise(Cop_biom = mean(Cop_biom)) # Average across months per season
+
+# Plot it
+ggplot(goa_cop_ssp125, aes(year, Cop_biom, colour = season)) + geom_line() +
+  ylab("Cop biomass (tonnes)") + xlab("Year")
+```
