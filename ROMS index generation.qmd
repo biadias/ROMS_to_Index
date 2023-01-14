@@ -1,8 +1,12 @@
 ---
 title: "Delta correction and gam smooth"
 author: "Grant Adams"
-format: docx
+format: html
 editor: visual
+execute:
+  echo: TRUE
+  message: FALSE
+  warning: FALSE
 ---
 
 ## Overview
@@ -19,8 +23,7 @@ ROMS simulations are referred to as the following:
 
 -   **projection**: GFDL-ESM2M downscaled projection (2015 to 2099)
 
--   **historical**: representing the final year of the spinup forced with observed
-    oceanographic conditions to better represent historical conditions (1980 to 2014).
+-   **historical**: representing the final year of the spinup forced with observed oceanographic conditions to better represent historical conditions (1980 to 2014).
 
 Variables from ROMS simulations averaged for each layer and grid cell on a monthly time scale were averaged or summed across the following vertical distributions:
 
@@ -60,9 +63,9 @@ X^{proj'}_t=\bar{X}^{hind}_{\bar{T}}+
 \left(X^{proj}_t-\bar{X}_{\bar{T}}^{hist} \right)\right)
 $$
 
-where $X^{proj'}_t$ is the bias corrected projection index in time-step \$t\$, $\bar{X}^{hind}_{\bar{T}}$ is the average index value from the hindcast during reference period $T$, $
+where $X^{proj'}_t$ is the bias corrected projection index in time-step \$t\$, $\bar{X}^{hind}_{\bar{T}}$ is the average index value from the hindcast during reference period $T$, \$
 
-\sigma^{hind}_{\bar{T}}$ is the standard deviation of the index from the hindcast during the reference period, $\sigma^{hist}_{\bar{T}}$ is the standard deviation of the index from the historical run during the reference period, $X^{proj}_t$ is the non bias-corrected projection index, $\bar{X}_{\bar{T}}^{hist}$ is the average value from historical run during the reference period.
+\sigma\^{hind}\_{\bar{T}}\$ is the standard deviation of the index from the hindcast during the reference period, $\sigma^{hist}_{\bar{T}}$ is the standard deviation of the index from the historical run during the reference period, $X^{proj}_t$ is the non bias-corrected projection index, $\bar{X}_{\bar{T}}^{hist}$ is the average value from historical run during the reference period.
 
 For log-normally distributed variables the formula can be adjusted as follows:
 
@@ -72,9 +75,9 @@ X^{proj'}_t=\exp\left(\bar{logX}^{hind}_{\bar{T}}+
 \left(logX^{proj}_t-\bar{logX}_{\bar{T}}^{hist} \right)\right)\right)
 $$
 
-where $T$, $
+where $T$, \$
 
-\sigma^{hind}_{\bar{T}}$ is the standard deviation of the log index from the hindcast during the reference period, $\sigma^{hist}_{\bar{T}}$ is the standard deviation of the log indext from the histroical run during the reference period.
+\sigma\^{hind}\_{\bar{T}}\$ is the standard deviation of the log index from the hindcast during the reference period, $\sigma^{hist}_{\bar{T}}$ is the standard deviation of the log indext from the histroical run during the reference period.
 
 Because the smallest time step in month, the mean and variance terms should be calculated as follows:
 
