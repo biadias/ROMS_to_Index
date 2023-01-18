@@ -76,6 +76,7 @@ delta_correction <- function(
     arrange(year,month) %>%
     select(NMFS_AREA, depthclass, varname, year, month, date, value, value_dc, unit)
   
-  projection <- rbind(projection, historical) 
+  projection <- rbind(projection, historical) %>% 
+    arrange(year,month)
   return(projection)
 }
