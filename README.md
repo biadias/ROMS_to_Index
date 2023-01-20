@@ -1,5 +1,8 @@
 # ROMS_to_Index
-Code forked from Alberto Rovellini for developing environmental indices from Regional Ocean Modelling System models (ROMS)
+Code forked from Alberto Rovellini for developing environmental indices from Regional Ocean Modelling System models (ROMS) in the Gulf of Alaska.
+
+See ROMS index generation.qmd for more information.
+
 Can be used to develop indices from 10K resolution ROMS models given an input of a spatial field following:
 https://kholsman.github.io/ACLIM2/#23_ROMSNPZ_variables
 
