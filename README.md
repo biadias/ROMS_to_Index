@@ -38,9 +38,6 @@ The averaged for each NMFS management area to the 1,000 m isobath (areas are cal
 
 The "raw" monthly data are located in the "/Data/NEP_10k_indices" folder. They represent the monthly indices either averaged across each depth and spatial domain ("nep_avg_…") or summed across each depth domain and then averaged across the spatial domain ("nep_sum…").
 
-# Index derivation
-
-Environmental indices can be derived for each modelers following their specific needs. We don't develop all indices here as individual modeler's needs may vary. But, indices integrated across each spatial NMFS management area should be area weighted using the following areas.
 
 # Delta correction overview
 
@@ -66,7 +63,14 @@ where $T$, $\sigma^{hind}_{\bar{T}}$ is the standard deviation of the log index 
 
 Because the smallest time step in month, the mean and variance terms should be calculated as follows:
 
-Monthly indices: time-step $t$ should be year $y$ and month $m$ (e.g. $t=y,m$)
+Monthly indices: time-step $t$ should be year $y$ and month $m$ (e.g. $t=y,m$). A function to do the bias correction is in the [R/Delta_correction.r](https://github.com/GOA-CLIM/ROMS_to_Index/blob/main/R/Delta_correction.R)
+
+
+# Index derivation
+
+Environmental indices can be derived for each modelers following their specific needs. We don't develop all indices here as individual modeler's needs may vary. But, indices integrated across each spatial NMFS management area should be area weighted using the following areas.
+
+A quarto document document exampling some index generation can be found [here](https://github.com/GOA-CLIM/ROMS_to_Index/blob/main/ROMS%20index%20generation.qmd)
 
 
 # Locations of monthly average output files on loon
