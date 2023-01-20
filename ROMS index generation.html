@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
 
 <meta charset="utf-8">
-<meta name="generator" content="quarto-1.2.269">
+<meta name="generator" content="quarto-1.1.189">
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
@@ -124,7 +124,6 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
           </div>
   </div>
     
-  
     
   </div>
   
@@ -326,7 +325,7 @@ X^{proj'}_t=\exp\left(\bar{logX}^{hind}_{\bar{T}}+
 <p>Load packages and functions</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="co"># install.packages("pacman")</span></span>
-<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>pacman<span class="sc">::</span><span class="fu">p_load</span>(mgcv, dplyr, lubridate, ggplot2)</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>pacman<span class="sc">::</span><span class="fu">p_load</span>(mgcv, dplyr, lubridate, ggplot2, tidyr)</span>
 <span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="fu">source</span>(<span class="st">"R/Delta_correction.R"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <p>Load data</p>
@@ -338,14 +337,14 @@ X^{proj'}_t=\exp\left(\bar{logX}^{hind}_{\bar{T}}+
 <span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>nep_hist <span class="ot">&lt;-</span> <span class="fu">read.csv</span>(<span class="st">"Data/NEP_10k_indices/nep_avg_wb_hist.csv"</span>)</span>
 <span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>nep_hist<span class="sc">$</span>simulation <span class="ot">=</span> <span class="st">"historical"</span></span>
 <span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>nep_ssp125 <span class="ot">&lt;-</span> <span class="fu">read.csv</span>(<span class="st">"Data/NEP_10k_indices/nep_avg_wb_ssp126.csv"</span>)</span>
-<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>nep_ssp125<span class="sc">$</span>simulation <span class="ot">=</span> <span class="st">"ssp125"</span></span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>nep_ssp126 <span class="ot">&lt;-</span> <span class="fu">read.csv</span>(<span class="st">"Data/NEP_10k_indices/nep_avg_wb_ssp126.csv"</span>)</span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>nep_ssp126<span class="sc">$</span>simulation <span class="ot">=</span> <span class="st">"ssp126"</span></span>
 <span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a>nep_585 <span class="ot">&lt;-</span> <span class="fu">read.csv</span>(<span class="st">"Data/NEP_10k_indices/nep_avg_wb_ssp585.csv"</span>)</span>
 <span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a>nep_585<span class="sc">$</span>simulation <span class="ot">=</span> <span class="st">"ssp585"</span></span>
 <span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a><span class="co"># Combine in list</span></span>
-<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a>roms_avg_data <span class="ot">&lt;-</span> <span class="fu">do.call</span>(rbind, <span class="fu">list</span>(nep_hind, nep_hist, nep_ssp125, nep_585))</span>
+<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a>roms_avg_data <span class="ot">&lt;-</span> <span class="fu">do.call</span>(rbind, <span class="fu">list</span>(nep_hind, nep_hist, nep_ssp126, nep_585))</span>
 <span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb3-17"><a href="#cb3-17" aria-hidden="true" tabindex="-1"></a><span class="co"># Add time and date information</span></span>
 <span id="cb3-18"><a href="#cb3-18" aria-hidden="true" tabindex="-1"></a>roms_avg_data <span class="ot">&lt;-</span> roms_avg_data <span class="sc">%&gt;%</span></span>
@@ -358,11 +357,11 @@ X^{proj'}_t=\exp\left(\bar{logX}^{hind}_{\bar{T}}+
 <div class="cell">
 <div class="sourceCode cell-code" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Run bias correction for all variables </span></span>
 <span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="co"># - rbinds bias-corrected projection to historical run</span></span>
-<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="co"># - SSP125</span></span>
-<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>ssp125_biascorrected <span class="ot">&lt;-</span> <span class="fu">delta_correction</span>(</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="co"># - SSP126</span></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>ssp126_biascorrected <span class="ot">&lt;-</span> <span class="fu">delta_correction</span>(</span>
 <span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>    <span class="at">hindcast =</span> roms_avg_data <span class="sc">%&gt;%</span> <span class="fu">filter</span>(simulation <span class="sc">==</span> <span class="st">"hindcast"</span>),</span>
 <span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>    <span class="at">historical =</span> roms_avg_data <span class="sc">%&gt;%</span> <span class="fu">filter</span>(simulation <span class="sc">==</span> <span class="st">"historical"</span>),</span>
-<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>    <span class="at">projection =</span> roms_avg_data <span class="sc">%&gt;%</span> <span class="fu">filter</span>(simulation <span class="sc">==</span> <span class="st">"ssp125"</span>),</span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>    <span class="at">projection =</span> roms_avg_data <span class="sc">%&gt;%</span> <span class="fu">filter</span>(simulation <span class="sc">==</span> <span class="st">"ssp126"</span>),</span>
 <span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>    <span class="at">ref_yrs =</span> <span class="dv">2000</span><span class="sc">:</span><span class="dv">2014</span>, <span class="co"># Overlap years for historical and hindcast ROMS</span></span>
 <span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a>    <span class="at">lognormal =</span> <span class="cn">FALSE</span>)</span>
 <span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a></span>
@@ -375,16 +374,16 @@ X^{proj'}_t=\exp\left(\bar{logX}^{hind}_{\bar{T}}+
 <span id="cb4-17"><a href="#cb4-17" aria-hidden="true" tabindex="-1"></a>  <span class="at">lognormal =</span> <span class="cn">FALSE</span>)</span>
 <span id="cb4-18"><a href="#cb4-18" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb4-19"><a href="#cb4-19" aria-hidden="true" tabindex="-1"></a><span class="co"># Extract variable of interest</span></span>
-<span id="cb4-20"><a href="#cb4-20" aria-hidden="true" tabindex="-1"></a>goa_SST_ssp125 <span class="ot">&lt;-</span> ssp125_biascorrected <span class="sc">%&gt;%</span></span>
+<span id="cb4-20"><a href="#cb4-20" aria-hidden="true" tabindex="-1"></a>goa_SST_ssp126 <span class="ot">&lt;-</span> ssp126_biascorrected <span class="sc">%&gt;%</span></span>
 <span id="cb4-21"><a href="#cb4-21" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(varname <span class="sc">==</span> <span class="st">"temp"</span> <span class="sc">&amp;</span> depthclass <span class="sc">==</span> <span class="st">"Surface"</span> <span class="sc">&amp;</span> NMFS_AREA <span class="sc">==</span> <span class="st">"All"</span>) <span class="sc">%&gt;%</span></span>
-<span id="cb4-22"><a href="#cb4-22" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">simulation =</span> <span class="st">"ssp125"</span>)</span>
+<span id="cb4-22"><a href="#cb4-22" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">simulation =</span> <span class="st">"ssp126"</span>)</span>
 <span id="cb4-23"><a href="#cb4-23" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb4-24"><a href="#cb4-24" aria-hidden="true" tabindex="-1"></a>goa_SST_ssp585 <span class="ot">&lt;-</span> ssp585_biascorrected <span class="sc">%&gt;%</span></span>
 <span id="cb4-25"><a href="#cb4-25" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(varname <span class="sc">==</span> <span class="st">"temp"</span> <span class="sc">&amp;</span> depthclass <span class="sc">==</span> <span class="st">"Surface"</span> <span class="sc">&amp;</span> NMFS_AREA <span class="sc">==</span> <span class="st">"All"</span>) <span class="sc">%&gt;%</span></span>
 <span id="cb4-26"><a href="#cb4-26" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">simulation =</span> <span class="st">"ssp585"</span>)</span>
 <span id="cb4-27"><a href="#cb4-27" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb4-28"><a href="#cb4-28" aria-hidden="true" tabindex="-1"></a><span class="co"># Plot it</span></span>
-<span id="cb4-29"><a href="#cb4-29" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(<span class="fu">rbind</span>(goa_SST_ssp125, goa_SST_ssp585), <span class="fu">aes</span>(date, value_dc)) <span class="sc">+</span> </span>
+<span id="cb4-29"><a href="#cb4-29" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(<span class="fu">rbind</span>(goa_SST_ssp126, goa_SST_ssp585), <span class="fu">aes</span>(date, value_dc)) <span class="sc">+</span> </span>
 <span id="cb4-30"><a href="#cb4-30" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_line</span>() <span class="sc">+</span> </span>
 <span id="cb4-31"><a href="#cb4-31" aria-hidden="true" tabindex="-1"></a>  <span class="fu">facet_wrap</span>(<span class="sc">~</span>simulation) <span class="sc">+</span> <span class="fu">ylab</span>(<span class="st">"SST (celcius)"</span>) <span class="sc">+</span> <span class="fu">xlab</span>(<span class="st">"Year-Month"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output-display">
@@ -393,8 +392,8 @@ X^{proj'}_t=\exp\left(\bar{logX}^{hind}_{\bar{T}}+
 </div>
 <p><strong>Example indices 2:</strong> seasonal sea surface temperature across all spatial strata</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Take monthlies and average from SSP125</span></span>
-<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>seasonal_sst_ssp125 <span class="ot">&lt;-</span> goa_SST_ssp125 <span class="sc">%&gt;%</span></span>
+<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Take monthlies and average from SSP126</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>seasonal_sst_ssp126 <span class="ot">&lt;-</span> goa_SST_ssp126 <span class="sc">%&gt;%</span></span>
 <span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">season =</span> <span class="fu">case_when</span>(</span>
 <span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>    month <span class="sc">%in%</span> <span class="fu">c</span>(<span class="dv">3</span>,<span class="dv">4</span>,<span class="dv">5</span>) <span class="sc">~</span> <span class="st">"spring"</span>,</span>
 <span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>    month <span class="sc">%in%</span> <span class="fu">c</span>(<span class="dv">11</span>,<span class="dv">12</span>,<span class="dv">1</span>,<span class="dv">2</span>) <span class="sc">~</span> <span class="st">"winter"</span>,</span>
@@ -405,48 +404,115 @@ X^{proj'}_t=\exp\left(\bar{logX}^{hind}_{\bar{T}}+
 <span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise</span>(<span class="at">value_dc =</span> <span class="fu">mean</span>(value_dc))</span>
 <span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a><span class="co"># Plot it</span></span>
-<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(seasonal_sst_ssp125, <span class="fu">aes</span>(year, value_dc, <span class="at">colour =</span> season)) <span class="sc">+</span> <span class="fu">geom_line</span>() <span class="sc">+</span></span>
+<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(seasonal_sst_ssp126, <span class="fu">aes</span>(year, value_dc, <span class="at">colour =</span> season)) <span class="sc">+</span> <span class="fu">geom_line</span>() <span class="sc">+</span></span>
 <span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ylab</span>(<span class="st">"SST (celcius)"</span>) <span class="sc">+</span> <span class="fu">xlab</span>(<span class="st">"Year"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output-display">
 <p><img src="ROMS-index-generation_files/figure-html/unnamed-chunk-5-1.png" class="img-fluid" width="672"></p>
 </div>
 </div>
-<p><strong>Example index 3:</strong> seasonal small copepod biomass spatial strata 610 and 620 for SSP585 at the surface</p>
+<p><strong>Example indices 3:</strong> Monthly sea surface temperature across 610 and 620 for SSP126 and SSP585</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Extract small copepod for desired area</span></span>
-<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>goa_cop_ssp125 <span class="ot">&lt;-</span> ssp585_biascorrected <span class="sc">%&gt;%</span></span>
-<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(varname <span class="sc">==</span> <span class="st">"Cop"</span> <span class="sc">&amp;</span> depthclass <span class="sc">==</span> <span class="st">"Surface"</span> <span class="sc">&amp;</span> NMFS_AREA <span class="sc">%in%</span> <span class="fu">c</span>(<span class="dv">610</span>, <span class="dv">620</span>)) <span class="sc">%&gt;%</span></span>
-<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">simulation =</span> <span class="st">"ssp585"</span>)</span>
-<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Convert to biomass</span></span>
-<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a><span class="co"># - Units of Cop are mg C m^-3</span></span>
-<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a><span class="co"># - Area is in m^2 * 10 m deep</span></span>
-<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a><span class="co"># - Final units will be tonne</span></span>
-<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a>goa_cop_ssp125 <span class="ot">&lt;-</span> goa_cop_ssp125 <span class="sc">%&gt;%</span></span>
-<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">Cop_biom =</span> <span class="fu">case_when</span>(</span>
-<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a>    NMFS_AREA <span class="sc">==</span> <span class="st">"610"</span> <span class="sc">~</span> <span class="dv">63986698621</span> <span class="sc">*</span> <span class="dv">10</span> <span class="sc">*</span> value <span class="sc">*</span> <span class="fl">1e-9</span>,</span>
-<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a><span class="co"># 610 area = 63986698621 m^2</span></span>
-<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a>    NMFS_AREA <span class="sc">==</span> <span class="st">"620"</span> <span class="sc">~</span> <span class="dv">69583703140</span> <span class="sc">*</span> <span class="dv">10</span> <span class="sc">*</span> value <span class="sc">*</span> <span class="fl">1e-9</span> <span class="co"># 620 area = 69583703140 m^2</span></span>
-<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a>  ))</span>
-<span id="cb6-16"><a href="#cb6-16" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-17"><a href="#cb6-17" aria-hidden="true" tabindex="-1"></a><span class="co"># Take mean fall </span></span>
-<span id="cb6-18"><a href="#cb6-18" aria-hidden="true" tabindex="-1"></a>goa_cop_ssp125 <span class="ot">&lt;-</span> goa_cop_ssp125 <span class="sc">%&gt;%</span></span>
-<span id="cb6-19"><a href="#cb6-19" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(year, month) <span class="sc">%&gt;%</span></span>
-<span id="cb6-20"><a href="#cb6-20" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise</span>(<span class="at">Cop_biom =</span> <span class="fu">sum</span>(Cop_biom)) <span class="sc">%&gt;%</span> <span class="co"># Sum biomass across 610 and 620</span></span>
-<span id="cb6-21"><a href="#cb6-21" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">season =</span> <span class="fu">case_when</span>(</span>
-<span id="cb6-22"><a href="#cb6-22" aria-hidden="true" tabindex="-1"></a>    month <span class="sc">%in%</span> <span class="fu">c</span>(<span class="dv">3</span>,<span class="dv">4</span>,<span class="dv">5</span>) <span class="sc">~</span> <span class="st">"spring"</span>,</span>
-<span id="cb6-23"><a href="#cb6-23" aria-hidden="true" tabindex="-1"></a>    month <span class="sc">%in%</span> <span class="fu">c</span>(<span class="dv">11</span>,<span class="dv">12</span>,<span class="dv">1</span>,<span class="dv">2</span>) <span class="sc">~</span> <span class="st">"winter"</span>,</span>
-<span id="cb6-24"><a href="#cb6-24" aria-hidden="true" tabindex="-1"></a>    month <span class="sc">%in%</span> <span class="fu">c</span>(<span class="dv">6</span>,<span class="dv">7</span>,<span class="dv">8</span>) <span class="sc">~</span> <span class="st">"summer"</span>,</span>
-<span id="cb6-25"><a href="#cb6-25" aria-hidden="true" tabindex="-1"></a>    month <span class="sc">%in%</span> <span class="fu">c</span>(<span class="dv">9</span>,<span class="dv">10</span>) <span class="sc">~</span> <span class="st">"fall"</span>,</span>
-<span id="cb6-26"><a href="#cb6-26" aria-hidden="true" tabindex="-1"></a>  )) <span class="sc">%&gt;%</span></span>
-<span id="cb6-27"><a href="#cb6-27" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(year, season) <span class="sc">%&gt;%</span></span>
-<span id="cb6-28"><a href="#cb6-28" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise</span>(<span class="at">Cop_biom =</span> <span class="fu">mean</span>(Cop_biom)) <span class="co"># Average across months per season</span></span>
-<span id="cb6-29"><a href="#cb6-29" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-30"><a href="#cb6-30" aria-hidden="true" tabindex="-1"></a><span class="co"># Plot it</span></span>
-<span id="cb6-31"><a href="#cb6-31" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(goa_cop_ssp125, <span class="fu">aes</span>(year, Cop_biom, <span class="at">colour =</span> season)) <span class="sc">+</span> <span class="fu">geom_line</span>() <span class="sc">+</span></span>
-<span id="cb6-32"><a href="#cb6-32" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ylab</span>(<span class="st">"Cop biomass (tonnes)"</span>) <span class="sc">+</span> <span class="fu">xlab</span>(<span class="st">"Year"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Extract variables we want</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>goa_SST_ssp126 <span class="ot">&lt;-</span> ssp126_biascorrected <span class="sc">%&gt;%</span></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(varname <span class="sc">==</span> <span class="st">"temp"</span> <span class="sc">&amp;</span> depthclass <span class="sc">==</span> <span class="st">"Surface"</span> <span class="sc">&amp;</span> NMFS_AREA <span class="sc">%in%</span> <span class="fu">c</span>(<span class="st">"610"</span>, <span class="st">"620"</span>)) <span class="sc">%&gt;%</span></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">simulation =</span> <span class="st">"ssp126"</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">pivot_wider</span>(<span class="at">values_from =</span> <span class="fu">c</span>(value_dc, value), <span class="at">names_from =</span> NMFS_AREA) <span class="sc">%&gt;%</span></span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">value_dc_610_620 =</span> (value_dc_610 <span class="sc">*</span> <span class="dv">63986698621</span> <span class="sc">+</span> value_dc_620 <span class="sc">*</span> <span class="dv">69583703140</span>) <span class="sc">/</span> (<span class="dv">63986698621</span> <span class="sc">+</span> <span class="dv">69583703140</span>)) <span class="co"># Take area weighted mean</span></span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>goa_SST_ssp585 <span class="ot">&lt;-</span> ssp585_biascorrected <span class="sc">%&gt;%</span></span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(varname <span class="sc">==</span> <span class="st">"temp"</span> <span class="sc">&amp;</span> depthclass <span class="sc">==</span> <span class="st">"Surface"</span> <span class="sc">&amp;</span> NMFS_AREA <span class="sc">%in%</span> <span class="fu">c</span>(<span class="st">"610"</span>, <span class="st">"620"</span>)) <span class="sc">%&gt;%</span> </span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">simulation =</span> <span class="st">"ssp585"</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">pivot_wider</span>(<span class="at">values_from =</span> <span class="fu">c</span>(value_dc, value), <span class="at">names_from =</span> NMFS_AREA) <span class="sc">%&gt;%</span></span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">value_dc_610_620 =</span> (value_dc_610 <span class="sc">*</span> <span class="dv">63986698621</span> <span class="sc">+</span> value_dc_620 <span class="sc">*</span> <span class="dv">69583703140</span>) <span class="sc">/</span> (<span class="dv">63986698621</span> <span class="sc">+</span> <span class="dv">69583703140</span>)) <span class="co"># Take area weighted mean</span></span>
+<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a><span class="co"># Plot it</span></span>
+<span id="cb6-16"><a href="#cb6-16" aria-hidden="true" tabindex="-1"></a>goa_SST_610_620 <span class="ot">&lt;-</span> <span class="fu">rbind</span>(goa_SST_ssp126, goa_SST_ssp585)</span>
+<span id="cb6-17"><a href="#cb6-17" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(goa_SST_610_620, <span class="fu">aes</span>(year, value_dc_610_620, <span class="at">colour =</span> simulation)) <span class="sc">+</span> <span class="fu">geom_line</span>() <span class="sc">+</span></span>
+<span id="cb6-18"><a href="#cb6-18" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ylab</span>(<span class="st">"SST (Celcius)"</span>) <span class="sc">+</span> <span class="fu">xlab</span>(<span class="st">"Year"</span>) <span class="sc">+</span> <span class="fu">facet_wrap</span>(<span class="sc">~</span>simulation)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output-display">
 <p><img src="ROMS-index-generation_files/figure-html/unnamed-chunk-6-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+<p><strong>Example index 4:</strong> mean monthly seasonal small copepod biomass spatial strata 610 and 620 for SSP585 across the water colum</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Load data averaged across depth and strata</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>nep_hind <span class="ot">&lt;-</span> <span class="fu">read.csv</span>(<span class="st">"Data/NEP_10k_indices/nep_sum_hind.csv"</span>)</span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>nep_hind<span class="sc">$</span>simulation <span class="ot">=</span> <span class="st">"hindcast"</span></span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>nep_hist <span class="ot">&lt;-</span> <span class="fu">read.csv</span>(<span class="st">"Data/NEP_10k_indices/nep_sum_wb_hist.csv"</span>)</span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>nep_hist<span class="sc">$</span>simulation <span class="ot">=</span> <span class="st">"historical"</span></span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>nep_ssp126 <span class="ot">&lt;-</span> <span class="fu">read.csv</span>(<span class="st">"Data/NEP_10k_indices/nep_sum_wb_ssp126.csv"</span>)</span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a>nep_ssp126<span class="sc">$</span>simulation <span class="ot">=</span> <span class="st">"ssp126"</span></span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a>nep_585 <span class="ot">&lt;-</span> <span class="fu">read.csv</span>(<span class="st">"Data/NEP_10k_indices/nep_sum_wb_ssp585.csv"</span>)</span>
+<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a>nep_585<span class="sc">$</span>simulation <span class="ot">=</span> <span class="st">"ssp585"</span></span>
+<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a><span class="co"># Combine in list</span></span>
+<span id="cb7-15"><a href="#cb7-15" aria-hidden="true" tabindex="-1"></a>roms_sum_data <span class="ot">&lt;-</span> <span class="fu">do.call</span>(rbind, <span class="fu">list</span>(nep_hind, nep_hist, nep_ssp126, nep_585))</span>
+<span id="cb7-16"><a href="#cb7-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-17"><a href="#cb7-17" aria-hidden="true" tabindex="-1"></a><span class="co"># Add time and date information</span></span>
+<span id="cb7-18"><a href="#cb7-18" aria-hidden="true" tabindex="-1"></a>roms_sum_data <span class="ot">&lt;-</span> roms_sum_data <span class="sc">%&gt;%</span></span>
+<span id="cb7-19"><a href="#cb7-19" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(</span>
+<span id="cb7-20"><a href="#cb7-20" aria-hidden="true" tabindex="-1"></a>    <span class="at">date =</span> lubridate<span class="sc">::</span><span class="fu">as_date</span>(date),</span>
+<span id="cb7-21"><a href="#cb7-21" aria-hidden="true" tabindex="-1"></a>    <span class="at">month =</span> lubridate<span class="sc">::</span><span class="fu">month</span>(date),</span>
+<span id="cb7-22"><a href="#cb7-22" aria-hidden="true" tabindex="-1"></a>         <span class="at">year =</span> lubridate<span class="sc">::</span><span class="fu">year</span>(date))</span>
+<span id="cb7-23"><a href="#cb7-23" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-24"><a href="#cb7-24" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-25"><a href="#cb7-25" aria-hidden="true" tabindex="-1"></a><span class="co"># Run bias correction for all variables </span></span>
+<span id="cb7-26"><a href="#cb7-26" aria-hidden="true" tabindex="-1"></a><span class="co"># - rbinds bias-corrected projection to historical run</span></span>
+<span id="cb7-27"><a href="#cb7-27" aria-hidden="true" tabindex="-1"></a><span class="co"># - SSP126</span></span>
+<span id="cb7-28"><a href="#cb7-28" aria-hidden="true" tabindex="-1"></a>ssp126_sum_biascorrected <span class="ot">&lt;-</span> <span class="fu">delta_correction</span>(</span>
+<span id="cb7-29"><a href="#cb7-29" aria-hidden="true" tabindex="-1"></a>    <span class="at">hindcast =</span> roms_sum_data <span class="sc">%&gt;%</span> <span class="fu">filter</span>(simulation <span class="sc">==</span> <span class="st">"hindcast"</span>),</span>
+<span id="cb7-30"><a href="#cb7-30" aria-hidden="true" tabindex="-1"></a>    <span class="at">historical =</span> roms_sum_data <span class="sc">%&gt;%</span> <span class="fu">filter</span>(simulation <span class="sc">==</span> <span class="st">"historical"</span>),</span>
+<span id="cb7-31"><a href="#cb7-31" aria-hidden="true" tabindex="-1"></a>    <span class="at">projection =</span> roms_sum_data <span class="sc">%&gt;%</span> <span class="fu">filter</span>(simulation <span class="sc">==</span> <span class="st">"ssp126"</span>),</span>
+<span id="cb7-32"><a href="#cb7-32" aria-hidden="true" tabindex="-1"></a>    <span class="at">ref_yrs =</span> <span class="dv">2000</span><span class="sc">:</span><span class="dv">2014</span>, <span class="co"># Overlap years for historical and hindcast ROMS</span></span>
+<span id="cb7-33"><a href="#cb7-33" aria-hidden="true" tabindex="-1"></a>    <span class="at">lognormal =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb7-34"><a href="#cb7-34" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-35"><a href="#cb7-35" aria-hidden="true" tabindex="-1"></a><span class="co"># - SSP585</span></span>
+<span id="cb7-36"><a href="#cb7-36" aria-hidden="true" tabindex="-1"></a>ssp585_sum_biascorrected <span class="ot">&lt;-</span> <span class="fu">delta_correction</span>(</span>
+<span id="cb7-37"><a href="#cb7-37" aria-hidden="true" tabindex="-1"></a>  <span class="at">hindcast =</span> roms_sum_data <span class="sc">%&gt;%</span> <span class="fu">filter</span>(simulation <span class="sc">==</span> <span class="st">"hindcast"</span>),</span>
+<span id="cb7-38"><a href="#cb7-38" aria-hidden="true" tabindex="-1"></a>  <span class="at">historical =</span> roms_sum_data <span class="sc">%&gt;%</span> <span class="fu">filter</span>(simulation <span class="sc">==</span> <span class="st">"historical"</span>),</span>
+<span id="cb7-39"><a href="#cb7-39" aria-hidden="true" tabindex="-1"></a>  <span class="at">projection =</span> roms_sum_data <span class="sc">%&gt;%</span> <span class="fu">filter</span>(simulation <span class="sc">==</span> <span class="st">"ssp585"</span>),</span>
+<span id="cb7-40"><a href="#cb7-40" aria-hidden="true" tabindex="-1"></a>  <span class="at">ref_yrs =</span> <span class="dv">2000</span><span class="sc">:</span><span class="dv">2014</span>, <span class="co"># Overlap years for historical and hindcast ROMS</span></span>
+<span id="cb7-41"><a href="#cb7-41" aria-hidden="true" tabindex="-1"></a>  <span class="at">lognormal =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb7-42"><a href="#cb7-42" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-43"><a href="#cb7-43" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-44"><a href="#cb7-44" aria-hidden="true" tabindex="-1"></a><span class="co"># Extract small copepod for desired area</span></span>
+<span id="cb7-45"><a href="#cb7-45" aria-hidden="true" tabindex="-1"></a>goa_cop_ssp585 <span class="ot">&lt;-</span> ssp585_sum_biascorrected <span class="sc">%&gt;%</span></span>
+<span id="cb7-46"><a href="#cb7-46" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(varname <span class="sc">==</span> <span class="st">"Cop"</span> <span class="sc">&amp;</span> depthclass <span class="sc">==</span> <span class="st">"All"</span> <span class="sc">&amp;</span> NMFS_AREA <span class="sc">%in%</span> <span class="fu">c</span>(<span class="dv">610</span>, <span class="dv">620</span>)) <span class="sc">%&gt;%</span></span>
+<span id="cb7-47"><a href="#cb7-47" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">simulation =</span> <span class="st">"ssp585"</span>)</span>
+<span id="cb7-48"><a href="#cb7-48" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-49"><a href="#cb7-49" aria-hidden="true" tabindex="-1"></a><span class="co"># Convert to biomass</span></span>
+<span id="cb7-50"><a href="#cb7-50" aria-hidden="true" tabindex="-1"></a><span class="co"># - Units of Cop are mg C m^-2 of water column</span></span>
+<span id="cb7-51"><a href="#cb7-51" aria-hidden="true" tabindex="-1"></a><span class="co"># - Area is in m^2</span></span>
+<span id="cb7-52"><a href="#cb7-52" aria-hidden="true" tabindex="-1"></a><span class="co"># - Final units will be tonne 1e-9 tonnes in a gram</span></span>
+<span id="cb7-53"><a href="#cb7-53" aria-hidden="true" tabindex="-1"></a>goa_cop_ssp585 <span class="ot">&lt;-</span> goa_cop_ssp585 <span class="sc">%&gt;%</span></span>
+<span id="cb7-54"><a href="#cb7-54" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">Cop_biom =</span> <span class="fu">case_when</span>(</span>
+<span id="cb7-55"><a href="#cb7-55" aria-hidden="true" tabindex="-1"></a>    NMFS_AREA <span class="sc">==</span> <span class="st">"610"</span> <span class="sc">~</span> <span class="dv">63986698621</span> <span class="sc">*</span> value <span class="sc">*</span> <span class="fl">1e-9</span>,</span>
+<span id="cb7-56"><a href="#cb7-56" aria-hidden="true" tabindex="-1"></a><span class="co"># 610 area = 63986698621 m^2</span></span>
+<span id="cb7-57"><a href="#cb7-57" aria-hidden="true" tabindex="-1"></a>    NMFS_AREA <span class="sc">==</span> <span class="st">"620"</span> <span class="sc">~</span> <span class="dv">69583703140</span> <span class="sc">*</span> value <span class="sc">*</span> <span class="fl">1e-9</span> <span class="co"># 620 area = 69583703140 m^2</span></span>
+<span id="cb7-58"><a href="#cb7-58" aria-hidden="true" tabindex="-1"></a>  ))</span>
+<span id="cb7-59"><a href="#cb7-59" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-60"><a href="#cb7-60" aria-hidden="true" tabindex="-1"></a><span class="co"># Take mean fall </span></span>
+<span id="cb7-61"><a href="#cb7-61" aria-hidden="true" tabindex="-1"></a>goa_cop_ssp585 <span class="ot">&lt;-</span> goa_cop_ssp585 <span class="sc">%&gt;%</span></span>
+<span id="cb7-62"><a href="#cb7-62" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(year, month) <span class="sc">%&gt;%</span></span>
+<span id="cb7-63"><a href="#cb7-63" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise</span>(<span class="at">Cop_biom =</span> <span class="fu">sum</span>(Cop_biom)) <span class="sc">%&gt;%</span> <span class="co"># Sum biomass across 610 and 620</span></span>
+<span id="cb7-64"><a href="#cb7-64" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">season =</span> <span class="fu">case_when</span>(</span>
+<span id="cb7-65"><a href="#cb7-65" aria-hidden="true" tabindex="-1"></a>    month <span class="sc">%in%</span> <span class="fu">c</span>(<span class="dv">3</span>,<span class="dv">4</span>,<span class="dv">5</span>) <span class="sc">~</span> <span class="st">"spring"</span>,</span>
+<span id="cb7-66"><a href="#cb7-66" aria-hidden="true" tabindex="-1"></a>    month <span class="sc">%in%</span> <span class="fu">c</span>(<span class="dv">11</span>,<span class="dv">12</span>,<span class="dv">1</span>,<span class="dv">2</span>) <span class="sc">~</span> <span class="st">"winter"</span>,</span>
+<span id="cb7-67"><a href="#cb7-67" aria-hidden="true" tabindex="-1"></a>    month <span class="sc">%in%</span> <span class="fu">c</span>(<span class="dv">6</span>,<span class="dv">7</span>,<span class="dv">8</span>) <span class="sc">~</span> <span class="st">"summer"</span>,</span>
+<span id="cb7-68"><a href="#cb7-68" aria-hidden="true" tabindex="-1"></a>    month <span class="sc">%in%</span> <span class="fu">c</span>(<span class="dv">9</span>,<span class="dv">10</span>) <span class="sc">~</span> <span class="st">"fall"</span>,</span>
+<span id="cb7-69"><a href="#cb7-69" aria-hidden="true" tabindex="-1"></a>  )) <span class="sc">%&gt;%</span></span>
+<span id="cb7-70"><a href="#cb7-70" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(year, season) <span class="sc">%&gt;%</span></span>
+<span id="cb7-71"><a href="#cb7-71" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise</span>(<span class="at">Cop_biom =</span> <span class="fu">mean</span>(Cop_biom)) <span class="co"># Average across months per season</span></span>
+<span id="cb7-72"><a href="#cb7-72" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-73"><a href="#cb7-73" aria-hidden="true" tabindex="-1"></a><span class="co"># Plot it</span></span>
+<span id="cb7-74"><a href="#cb7-74" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(goa_cop_ssp585, <span class="fu">aes</span>(year, Cop_biom, <span class="at">colour =</span> season)) <span class="sc">+</span> <span class="fu">geom_line</span>() <span class="sc">+</span></span>
+<span id="cb7-75"><a href="#cb7-75" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ylab</span>(<span class="st">"Cop biomass (tonnes)"</span>) <span class="sc">+</span> <span class="fu">xlab</span>(<span class="st">"Year"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<p><img src="ROMS-index-generation_files/figure-html/unnamed-chunk-7-1.png" class="img-fluid" width="672"></p>
 </div>
 </div>
 </section>
@@ -494,24 +560,7 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
     button.classList.add('code-copy-button-checked');
     var currentTitle = button.getAttribute("title");
     button.setAttribute("title", "Copied!");
-    let tooltip;
-    if (window.bootstrap) {
-      button.setAttribute("data-bs-toggle", "tooltip");
-      button.setAttribute("data-bs-placement", "left");
-      button.setAttribute("data-bs-title", "Copied!");
-      tooltip = new bootstrap.Tooltip(button, 
-        { trigger: "manual", 
-          customClass: "code-copy-button-tooltip",
-          offset: [0, -8]});
-      tooltip.show();    
-    }
     setTimeout(function() {
-      if (tooltip) {
-        tooltip.hide();
-        button.removeAttribute("data-bs-title");
-        button.removeAttribute("data-bs-toggle");
-        button.removeAttribute("data-bs-placement");
-      }
       button.setAttribute("title", currentTitle);
       button.classList.remove('code-copy-button-checked');
     }, 1000);
@@ -547,42 +596,24 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
       return note.innerHTML;
     });
   }
-  const findCites = (el) => {
-    const parentEl = el.parentElement;
-    if (parentEl) {
-      const cites = parentEl.dataset.cites;
-      if (cites) {
-        return {
-          el,
-          cites: cites.split(' ')
-        };
-      } else {
-        return findCites(el.parentElement)
-      }
-    } else {
-      return undefined;
-    }
-  };
   var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
   for (var i=0; i<bibliorefs.length; i++) {
     const ref = bibliorefs[i];
-    const citeInfo = findCites(ref);
-    if (citeInfo) {
-      tippyHover(citeInfo.el, function() {
-        var popup = window.document.createElement('div');
-        citeInfo.cites.forEach(function(cite) {
-          var citeDiv = window.document.createElement('div');
-          citeDiv.classList.add('hanging-indent');
-          citeDiv.classList.add('csl-entry');
-          var biblioDiv = window.document.getElementById('ref-' + cite);
-          if (biblioDiv) {
-            citeDiv.innerHTML = biblioDiv.innerHTML;
-          }
-          popup.appendChild(citeDiv);
-        });
-        return popup.innerHTML;
+    const cites = ref.parentNode.getAttribute('data-cites').split(' ');
+    tippyHover(ref, function() {
+      var popup = window.document.createElement('div');
+      cites.forEach(function(cite) {
+        var citeDiv = window.document.createElement('div');
+        citeDiv.classList.add('hanging-indent');
+        citeDiv.classList.add('csl-entry');
+        var biblioDiv = window.document.getElementById('ref-' + cite);
+        if (biblioDiv) {
+          citeDiv.innerHTML = biblioDiv.innerHTML;
+        }
+        popup.appendChild(citeDiv);
       });
-    }
+      return popup.innerHTML;
+    });
   }
 });
 </script>
