@@ -97,7 +97,7 @@ Load packages and functions
 
 ```{r}
 # install.packages("pacman")
-pacman::p_load(mgcv, dplyr, lubridate, ggplot2)
+pacman::p_load(mgcv, dplyr, lubridate, ggplot2, tidyr)
 source("R/Delta_correction.R")
 ```
 
@@ -111,14 +111,14 @@ nep_hind$simulation = "hindcast"
 nep_hist <- read.csv("Data/NEP_10k_indices/nep_avg_wb_hist.csv")
 nep_hist$simulation = "historical"
 
-nep_ssp125 <- read.csv("Data/NEP_10k_indices/nep_avg_wb_ssp126.csv")
-nep_ssp125$simulation = "ssp125"
+nep_ssp126 <- read.csv("Data/NEP_10k_indices/nep_avg_wb_ssp126.csv")
+nep_ssp126$simulation = "ssp126"
 
 nep_585 <- read.csv("Data/NEP_10k_indices/nep_avg_wb_ssp585.csv")
 nep_585$simulation = "ssp585"
 
 # Combine in list
-roms_avg_data <- do.call(rbind, list(nep_hind, nep_hist, nep_ssp125, nep_585))
+roms_avg_data <- do.call(rbind, list(nep_hind, nep_hist, nep_ssp126, nep_585))
 
 # Add time and date information
 roms_avg_data <- roms_avg_data %>%
@@ -133,11 +133,11 @@ roms_avg_data <- roms_avg_data %>%
 ```{r}
 # Run bias correction for all variables 
 # - rbinds bias-corrected projection to historical run
-# - SSP125
-ssp125_biascorrected <- delta_correction(
+# - SSP126
+ssp126_biascorrected <- delta_correction(
     hindcast = roms_avg_data %>% filter(simulation == "hindcast"),
     historical = roms_avg_data %>% filter(simulation == "historical"),
-    projection = roms_avg_data %>% filter(simulation == "ssp125"),
+    projection = roms_avg_data %>% filter(simulation == "ssp126"),
     ref_yrs = 2000:2014, # Overlap years for historical and hindcast ROMS
     lognormal = FALSE)
 
@@ -150,16 +150,16 @@ ssp585_biascorrected <- delta_correction(
   lognormal = FALSE)
 
 # Extract variable of interest
-goa_SST_ssp125 <- ssp125_biascorrected %>%
+goa_SST_ssp126 <- ssp126_biascorrected %>%
   filter(varname == "temp" & depthclass == "Surface" & NMFS_AREA == "All") %>%
-  mutate(simulation = "ssp125")
+  mutate(simulation = "ssp126")
 
 goa_SST_ssp585 <- ssp585_biascorrected %>%
   filter(varname == "temp" & depthclass == "Surface" & NMFS_AREA == "All") %>%
   mutate(simulation = "ssp585")
 
 # Plot it
-ggplot(rbind(goa_SST_ssp125, goa_SST_ssp585), aes(date, value_dc)) + 
+ggplot(rbind(goa_SST_ssp126, goa_SST_ssp585), aes(date, value_dc)) + 
   geom_line() + 
   facet_wrap(~simulation) + ylab("SST (celcius)") + xlab("Year-Month")
 ```
@@ -167,8 +167,8 @@ ggplot(rbind(goa_SST_ssp125, goa_SST_ssp585), aes(date, value_dc)) +
 **Example indices 2:** seasonal sea surface temperature across all spatial strata
 
 ```{r}
-# Take monthlies and average from SSP125
-seasonal_sst_ssp125 <- goa_SST_ssp125 %>%
+# Take monthlies and average from SSP126
+seasonal_sst_ssp126 <- goa_SST_ssp126 %>%
   mutate(season = case_when(
     month %in% c(3,4,5) ~ "spring",
     month %in% c(11,12,1,2) ~ "winter",
@@ -179,31 +179,97 @@ seasonal_sst_ssp125 <- goa_SST_ssp125 %>%
   summarise(value_dc = mean(value_dc))
 
 # Plot it
-ggplot(seasonal_sst_ssp125, aes(year, value_dc, colour = season)) + geom_line() +
+ggplot(seasonal_sst_ssp126, aes(year, value_dc, colour = season)) + geom_line() +
   ylab("SST (celcius)") + xlab("Year")
 ```
 
-**Example index 3:** seasonal small copepod biomass spatial strata 610 and 620 for SSP585 at the surface
+**Example indices 3:** Monthly sea surface temperature across 610 and 620 for SSP126 and SSP585
 
 ```{r}
+# Extract variables we want
+goa_SST_ssp126 <- ssp126_biascorrected %>%
+  filter(varname == "temp" & depthclass == "Surface" & NMFS_AREA %in% c("610", "620")) %>%
+  mutate(simulation = "ssp126") %>%
+  pivot_wider(values_from = c(value_dc, value), names_from = NMFS_AREA) %>%
+  mutate(value_dc_610_620 = (value_dc_610 * 63986698621 + value_dc_620 * 69583703140) / (63986698621 + 69583703140)) # Take area weighted mean
+
+goa_SST_ssp585 <- ssp585_biascorrected %>%
+  filter(varname == "temp" & depthclass == "Surface" & NMFS_AREA %in% c("610", "620")) %>% 
+  mutate(simulation = "ssp585") %>%
+  pivot_wider(values_from = c(value_dc, value), names_from = NMFS_AREA) %>%
+  mutate(value_dc_610_620 = (value_dc_610 * 63986698621 + value_dc_620 * 69583703140) / (63986698621 + 69583703140)) # Take area weighted mean
+
+
+# Plot it
+goa_SST_610_620 <- rbind(goa_SST_ssp126, goa_SST_ssp585)
+ggplot(goa_SST_610_620, aes(year, value_dc_610_620, colour = simulation)) + geom_line() +
+  ylab("SST (Celcius)") + xlab("Year") + facet_wrap(~simulation)
+```
+
+**Example index 4:** mean monthly seasonal small copepod biomass spatial strata 610 and 620 for SSP585 across the water colum
+
+```{r}
+# Load data averaged across depth and strata
+nep_hind <- read.csv("Data/NEP_10k_indices/nep_sum_hind.csv")
+nep_hind$simulation = "hindcast"
+
+nep_hist <- read.csv("Data/NEP_10k_indices/nep_sum_wb_hist.csv")
+nep_hist$simulation = "historical"
+
+nep_ssp126 <- read.csv("Data/NEP_10k_indices/nep_sum_wb_ssp126.csv")
+nep_ssp126$simulation = "ssp126"
+
+nep_585 <- read.csv("Data/NEP_10k_indices/nep_sum_wb_ssp585.csv")
+nep_585$simulation = "ssp585"
+
+# Combine in list
+roms_sum_data <- do.call(rbind, list(nep_hind, nep_hist, nep_ssp126, nep_585))
+
+# Add time and date information
+roms_sum_data <- roms_sum_data %>%
+  mutate(
+    date = lubridate::as_date(date),
+    month = lubridate::month(date),
+         year = lubridate::year(date))
+
+
+# Run bias correction for all variables 
+# - rbinds bias-corrected projection to historical run
+# - SSP126
+ssp126_sum_biascorrected <- delta_correction(
+    hindcast = roms_sum_data %>% filter(simulation == "hindcast"),
+    historical = roms_sum_data %>% filter(simulation == "historical"),
+    projection = roms_sum_data %>% filter(simulation == "ssp126"),
+    ref_yrs = 2000:2014, # Overlap years for historical and hindcast ROMS
+    lognormal = FALSE)
+
+# - SSP585
+ssp585_sum_biascorrected <- delta_correction(
+  hindcast = roms_sum_data %>% filter(simulation == "hindcast"),
+  historical = roms_sum_data %>% filter(simulation == "historical"),
+  projection = roms_sum_data %>% filter(simulation == "ssp585"),
+  ref_yrs = 2000:2014, # Overlap years for historical and hindcast ROMS
+  lognormal = FALSE)
+
+
 # Extract small copepod for desired area
-goa_cop_ssp125 <- ssp585_biascorrected %>%
-  filter(varname == "Cop" & depthclass == "Surface" & NMFS_AREA %in% c(610, 620)) %>%
+goa_cop_ssp585 <- ssp585_sum_biascorrected %>%
+  filter(varname == "Cop" & depthclass == "All" & NMFS_AREA %in% c(610, 620)) %>%
   mutate(simulation = "ssp585")
 
 # Convert to biomass
-# - Units of Cop are mg C m^-3
-# - Area is in m^2 * 10 m deep
-# - Final units will be tonne
-goa_cop_ssp125 <- goa_cop_ssp125 %>%
+# - Units of Cop are mg C m^-2 of water column
+# - Area is in m^2
+# - Final units will be tonne 1e-9 tonnes in a gram
+goa_cop_ssp585 <- goa_cop_ssp585 %>%
   mutate(Cop_biom = case_when(
-    NMFS_AREA == "610" ~ 63986698621 * 10 * value * 1e-9,
+    NMFS_AREA == "610" ~ 63986698621 * value * 1e-9,
 # 610 area = 63986698621 m^2
-    NMFS_AREA == "620" ~ 69583703140 * 10 * value * 1e-9 # 620 area = 69583703140 m^2
+    NMFS_AREA == "620" ~ 69583703140 * value * 1e-9 # 620 area = 69583703140 m^2
   ))
 
 # Take mean fall 
-goa_cop_ssp125 <- goa_cop_ssp125 %>%
+goa_cop_ssp585 <- goa_cop_ssp585 %>%
   group_by(year, month) %>%
   summarise(Cop_biom = sum(Cop_biom)) %>% # Sum biomass across 610 and 620
   mutate(season = case_when(
@@ -216,6 +282,6 @@ goa_cop_ssp125 <- goa_cop_ssp125 %>%
   summarise(Cop_biom = mean(Cop_biom)) # Average across months per season
 
 # Plot it
-ggplot(goa_cop_ssp125, aes(year, Cop_biom, colour = season)) + geom_line() +
+ggplot(goa_cop_ssp585, aes(year, Cop_biom, colour = season)) + geom_line() +
   ylab("Cop biomass (tonnes)") + xlab("Year")
 ```
