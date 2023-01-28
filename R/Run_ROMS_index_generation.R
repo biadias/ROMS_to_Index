@@ -23,6 +23,7 @@ source("R/ROMS_coordinate_mapping.R") # Maps ROMS coordiantes to NMFS management
 source("R/ROMS_to_index_functions.R") # Functions to derive indices
 
 netcdf_files <- list.files('Data/ROMS/monthly_averages/', full.names = TRUE)
+netcdf_files <- netcdf_files[!grepl('.tmp', netcdf_files)] # gets rid of weird files on loon
 
 
 ## Define variables to pull from ROMS
