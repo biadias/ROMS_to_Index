@@ -6,6 +6,7 @@
 #' @param ref_yrs 
 #' @param lognormal 
 #' @param smooth 
+#' @param include_hindcast 
 #'
 #' @return
 #' @export
@@ -17,7 +18,8 @@ delta_correction <- function(
     projection = fut,
     ref_yrs = 2000:2014,
     lognormal = FALSE,
-    smooth = FALSE){
+    smooth = FALSE,
+    include_hindcast = FALSE){
   
   # Convert to log
   if(lognormal){
@@ -48,15 +50,28 @@ delta_correction <- function(
                            list(projection, goa_clim_hist, goa_clim_hind)) %>%
     arrange(varname, year, month)
   
+  # - Merge historical run with hist and hind summary statistics 
+  historical <- Reduce(function(x, y) merge(x, y, all=TRUE, by = c("month", "varname", "depthclass", "NMFS_AREA")), 
+                       list(historical, goa_clim_hist, goa_clim_hind)) %>%
+    arrange(varname, year, month)
+  
   # - Calculate index
   if(!lognormal){
+    # projection
   projection <- projection %>%
     group_by(month, varname, depthclass, NMFS_AREA) %>%
     mutate(value_dc = mean_hind + (sd_hind/sd_hist * (value - mean_hist))) %>%
     ungroup() %>% arrange(year, month) %>%
     select(NMFS_AREA, depthclass, varname, year, month, date, value, value_dc, unit)
-  }
   
+  # historical
+  historical <- historical %>%
+    group_by(month, varname, depthclass, NMFS_AREA) %>%
+    mutate(value_dc = mean_hind + (sd_hind/sd_hist * (value - mean_hist))) %>%
+    ungroup() %>% arrange(year, month) %>%
+    select(NMFS_AREA, depthclass, varname, year, month, date, value, value_dc, unit)
+  
+  }
   
   if(lognormal){
     projection <- projection %>%
@@ -65,18 +80,41 @@ delta_correction <- function(
       ungroup() %>% arrange(year, month) %>%
       select(NMFS_AREA, depthclass, varname, year, month, date, value, value_dc, unit)
     
-    # Back transform historical and projection
+    historical <- historical %>%
+      group_by(month, varname, depthclass, NMFS_AREA) %>%
+      mutate(value_dc =  exp(mean_hind + (sd_hind/sd_hist * (log(value) - mean_hist)))) %>%
+      ungroup() %>% arrange(year, month) %>%
+      select(NMFS_AREA, depthclass, varname, year, month, date, value, value_dc, unit)
+    
+    # Back transform historical and projection and hindcast
     historical$value = exp(historical$value)
     projection$value = exp(projection$value)
+    hindcast$value = exp(hindcast$value)
   }
   
-  # - Combine with historical
-  historical <- historical %>%
-    mutate(value_dc = value) %>% 
-    arrange(year,month) %>%
-    select(NMFS_AREA, depthclass, varname, year, month, date, value, value_dc, unit)
+  # - Combine time series
+  # two options:
+  # 1: historical + projection
+  # 2: historical (<2000) + hindcast (2000-2020) + projection (>2020)
   
-  projection <- rbind(projection, historical) %>% 
-    arrange(year,month)
-  return(projection)
+  if(!include_hindcast){
+    
+    full_time_series <- rbind(projection, historical) %>% 
+      arrange(year,month)
+    
+  } else {
+    
+    hindcast <- hindcast %>%
+      arrange(year,month) %>%
+      mutate(value_dc = value) %>%
+      select(NMFS_AREA, depthclass, varname, year, month, date, value, value_dc, unit)
+    
+    full_time_series <- rbind(projection %>% filter(year > max(hindcast$year)), 
+                        historical %>% filter(year < min(hindcast$year)), 
+                        hindcast) %>% 
+      arrange(year,month)
+    
+  }
+  
+  return(full_time_series)
 }
