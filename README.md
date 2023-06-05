@@ -8,11 +8,11 @@ Projections of environmental variables biomass are derived from a downscaled Int
 
 ROMS simulations are referred to as the following:
 
-- hindcast: representing model spinup (2000 to 2020),
+- hindcast: representing the final year of the spinup forced with observed oceanographic conditions to better represent historical conditions (2000 to 2020),
 
 - projection: GFDL-ESM2M downscaled projection (2015 to 2099)
 
-- historical: representing the final year of the spinup forced with observed oceanographic conditions to better represent historical conditions (1980 to 2014).
+- historical: representing model spinup (1980 to 2014).
 
 Variables from ROMS simulations averaged for each layer and grid cell on a monthly time scale were averaged or summed across the following vertical distributions:
 
