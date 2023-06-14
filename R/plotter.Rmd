@@ -1,5 +1,5 @@
 ---
-title: "Viewer of ROMS NEP 10K indexes for GOA-CLIM - past runs"
+title: "Viewer of ROMS NEP 10K indexes for GOA-CLIM - past runs - 0-300 m - Revised Hindcast June 2023"
 output:
   html_document:
     toc: yes
@@ -34,11 +34,11 @@ options(dplyr.summarise.inform = FALSE)
 ```
 
 ```{r}
-nep_avg_hind <- read.csv('../Data/output_from_loon/nep_avg_hind.csv')
-nep_sum_hind <- read.csv('../Data/output_from_loon/nep_sum_hind.csv')
+nep_avg_hind <- read.csv('../Data/output_from_loon/nep_avg_revised_hind_300.csv')
+nep_sum_hind <- read.csv('../Data/output_from_loon/nep_sum_revised_hind_300.csv')
 
-nep_avg_hist <- read.csv('../Data/output_from_loon/nep_avg_wb_hist.csv')
-nep_sum_hist <- read.csv('../Data/output_from_loon/nep_sum_wb_hist.csv')
+nep_avg_hist <- read.csv('../Data/output_from_loon/nep_avg_wb_hist_300.csv')
+nep_sum_hist <- read.csv('../Data/output_from_loon/nep_sum_wb_hist_300.csv')
 ```
 
 ```{r abun fxn,include=F,echo=F}
@@ -153,7 +153,7 @@ varnames_sum_hist <- nep_sum_hist %>% pull(varname) %>% unique()
 varplots_sum_hist <- purrr::map(varnames_sum_hist,~plot_sum_hist(.))
 ```
 
-# NEP 10K hindcast (2000-2020) - averages {.tabset .tabset-pills}
+# NEP 10K hindcast (1990-2020) - averages {.tabset .tabset-pills}
 
 ```{r avghind,fig.height=20,fig.width=10,results='asis'}
 for(i in 1:length(varplots_avg_hind)){
@@ -163,7 +163,7 @@ for(i in 1:length(varplots_avg_hind)){
 }
 ```
 
-# NEP 10K hindcast (2000-2020) - total {.tabset .tabset-pills}
+# NEP 10K hindcast (1990-2020) - total {.tabset .tabset-pills}
 
 ```{r sumhind,fig.height=12,fig.width=10,results='asis'}
 for(i in 1:length(varplots_sum_hind)){

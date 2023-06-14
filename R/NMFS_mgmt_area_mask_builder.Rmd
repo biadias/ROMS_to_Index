@@ -122,6 +122,8 @@ etopo_nmfs_pols <- etopo_nmfs_pol %>% disaggregate()
 etopo_nmfs_sf <- etopo_nmfs_pols %>% st_as_sf() %>% mutate(index = 1:nrow(.))
 #7
 etopo_mask <- etopo_nmfs_sf[1,] # the main shelf polygon seems to be the first row
+# #8 for 300 m
+# etopo_mask <- etopo_mask %>% st_cast('POLYGON')
 ```
 
 Visualise.

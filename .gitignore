@@ -3,7 +3,12 @@
 .RData
 .Ruserdata
 *.zip
+*.csv
+*.png
 
 #big netCDF data
 *.nc
 *.grd
+
+#Albi's files
+plots_AMSS.R

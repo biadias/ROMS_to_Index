@@ -37,12 +37,12 @@ sum(!average_vars %in% roms_variables$name) # Good if 0
 ## Summarize 
 goa_averaged_vals <- roms_to_goa(netcdf_files = netcdf_files, 
                         variables = average_vars,
-                        min_depth = 0, max_depth = -1000,
+                        min_depth = 0, max_depth = -300,
                         average = TRUE)
 
 goa_summed_vals <- roms_to_goa(netcdf_files = netcdf_files, 
                                  variables = summed_vars,
-                                 min_depth = 0, max_depth = -1000,
+                                 min_depth = 0, max_depth = -300,
                                  average = FALSE)
 
 write.csv(goa_averaged_vals, 'nep_avg.csv', row.names = F)

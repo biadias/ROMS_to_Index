@@ -34,11 +34,11 @@ options(dplyr.summarise.inform = FALSE)
 ```
 
 ```{r}
-nep_avg_126 <- read.csv('../Data/output_from_loon/nep_avg_wb_ssp126.csv')
-nep_sum_126 <- read.csv('../Data/output_from_loon/nep_sum_wb_ssp126.csv')
+nep_avg_126 <- read.csv('../Data/output_from_loon/nep_avg_wb_ssp126_300.csv')
+nep_sum_126 <- read.csv('../Data/output_from_loon/nep_sum_wb_ssp126_300.csv')
 
-nep_avg_585 <- read.csv('../Data/output_from_loon/nep_avg_wb_ssp585.csv')
-nep_sum_585 <- read.csv('../Data/output_from_loon/nep_sum_wb_ssp585.csv')
+nep_avg_585 <- read.csv('../Data/output_from_loon/nep_avg_wb_ssp585_300.csv')
+nep_sum_585 <- read.csv('../Data/output_from_loon/nep_sum_wb_ssp585_300.csv')
 ```
 
 ```{r abun fxn,include=F,echo=F}

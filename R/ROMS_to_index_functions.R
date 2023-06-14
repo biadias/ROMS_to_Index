@@ -89,13 +89,13 @@ interpolate_var <- function(romsfile, variable, time_step, this_roms_vars, this_
   # hist(check$maxdepth)
   
   # # Double check how many ROMS cells are deeper than 1000 after masking
-  check <- interp_dat %>%
-    group_by(cellindex) %>%
-    summarise(maxdepth = max(abs(depth))) %>% 
-    as.data.frame() %>%
-    pull(maxdepth)
-    
-  if(length(check[check>abs(max_depth) | check<abs(min_depth)]) > 0) stop("Some depths of rho points are outside the accepted range")
+  # check <- interp_dat %>%
+  #   group_by(cellindex) %>%
+  #   summarise(maxdepth = max(abs(depth))) %>% 
+  #   as.data.frame() %>%
+  #   pull(maxdepth)
+  #   
+  # if(length(check[check>abs(max_depth) | check<abs(min_depth)]) > 0) stop("Some depths of rho points are outside the accepted range")
 
   # Define depth class and remove areas with depth over max_depth
   interp_dat <- interp_dat %>%
