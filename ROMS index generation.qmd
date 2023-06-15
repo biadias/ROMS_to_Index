@@ -33,21 +33,21 @@ Variables from ROMS simulations averaged for each layer and grid cell on a month
 
 -   Midwater (from 10 m depth to 10 m from bottom)
 
-The averaged for each NMFS management area to the 1,000 m isobath (areas are calculated from `st_area` in the `sf` package):
+The averaged for each NMFS management area to the 300 m or 1,000 m isobath (areas are calculated from `st_area` in the `sf` package):
 
--   610 (area = 63986698621 $m^2$)
+-   610 area is 57225003746 $m^2$ for 300 m isobath and 63986698621 $m^2$ for 1,000 m isobath
 
--   620 (area = 69583703140 $m^2$)
+-   620 area is 62597059226 $m^2$ for 300 m isobath and 69583703140 $m^2$ for 1,000 m isobath
 
--   630 (area = 105918077937 $m^2$)
+-   630 area is 98582220025 $m^2$ for 300 m isobath and 105918077937 $m^2$ for 1,000 m isobath
 
--   640 (area = 37270389681 $m^2$)
+-   640 area is 32560976631 $m^2$ for 300 m isobath and 37270389681 $m^2$ for 1,000 m isobath
 
--   650 (area = 43952466109 $m^2$)
+-   650 area is 25178840116 $m^2$ for 300 m isobath and 43952466109 $m^2$ for 1,000 m isobath
 
 -   All areas
 
-The "raw" monthly data are located in the **"/Data/NEP_10k_indices"** folder. They represent the monthly indices either averaged across each depth and spatial domain ("nep_avg\_...") or summed across each depth domain and then averaged across the spatial domain ("nep_sum...").
+The "raw" monthly data are located in the **"/Data/NEP_10k_indices"** folder with the 300 or 1000 at the end of the file name indicating the isobath they are averaged to. They represent the monthly indices either averaged across each depth and spatial domain ("nep_avg\_...") or summed across each depth domain and then averaged across the spatial domain ("nep_sum...").
 
 ## Index derivation
 

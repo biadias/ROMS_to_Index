@@ -16,7 +16,7 @@ Workflow to produce spatial masks for GOA models from:
 1. NMFS statistical areas
 2. ETOPO depth raster
 
-Spatial masks are produced for the following NMFS areas: 610, 620, 630, 640, 650; from 0 to 1000 m depth.
+Spatial masks are produced for the following NMFS areas: 610, 620, 630, 640, 650; from 0 to 1000 m or 300 m depth.
 
 
 ```{r, include = FALSE}
