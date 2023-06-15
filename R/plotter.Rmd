@@ -1,5 +1,5 @@
 ---
-title: "Viewer of ROMS NEP 10K indexes for GOA-CLIM - past runs - 0-300 m - Revised Hindcast June 2023"
+title: "Viewer of ROMS NEP 10K indexes for GOA-CLIM - past runs - 0-1000 m - Revised Hindcast June 2023"
 output:
   html_document:
     toc: yes
@@ -34,11 +34,11 @@ options(dplyr.summarise.inform = FALSE)
 ```
 
 ```{r}
-nep_avg_hind <- read.csv('../Data/output_from_loon/nep_avg_revised_hind_300.csv')
-nep_sum_hind <- read.csv('../Data/output_from_loon/nep_sum_revised_hind_300.csv')
+nep_avg_hind <- read.csv('../Data/output_from_loon/nep_avg_revised_hind_1000.csv')
+nep_sum_hind <- read.csv('../Data/output_from_loon/nep_sum_revised_hind_1000.csv')
 
-nep_avg_hist <- read.csv('../Data/output_from_loon/nep_avg_wb_hist_300.csv')
-nep_sum_hist <- read.csv('../Data/output_from_loon/nep_sum_wb_hist_300.csv')
+nep_avg_hist <- read.csv('../Data/output_from_loon/nep_avg_wb_hist.csv')
+nep_sum_hist <- read.csv('../Data/output_from_loon/nep_sum_wb_hist.csv')
 ```
 
 ```{r abun fxn,include=F,echo=F}
