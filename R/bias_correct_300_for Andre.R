@@ -5,8 +5,11 @@ pacman::p_load(mgcv, dplyr, lubridate, ggplot2, tidyr, sf)
 source("R/Delta_correction.R")
 
 # calc areas
-nmfs <- st_read('Data/Depth trimmed NMFS shapefiles/NMFS610-650.shp')
+nmfs <- st_read('Data/Depth trimmed NMFS shapefiles 300/NMFS610-650.shp')
 areas <- nmfs %>% rowwise() %>% mutate(areas = st_area(geometry)) %>% ungroup()
+
+# area 650 for the 300 m mask is split into two, due to a deep channel. Combine it.
+areas <- areas %>% group_by(NMFS_AREA) %>% summarise(geometry = st_union(geometry), areas = sum(areas))
 
 # areas m^2 of 0-300 m shelf by NMFS area
 # 610 57225003746
