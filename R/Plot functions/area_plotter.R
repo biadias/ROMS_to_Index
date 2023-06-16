@@ -20,9 +20,9 @@ coast <- maps::map(database = 'worldHires', regions = c('USA','Canada'), plot = 
 
 coast_sf <- coast %>% 
   st_as_sf(crs = 4326) %>% 
-  st_transform(crs = st_crs(nmfs_clipped)) %>% 
+  st_transform(crs = st_crs(nmfs_clipped_1000)) %>% 
   st_combine() %>%
-  st_crop(nmfs_clipped %>% st_bbox())
+  st_crop(nmfs_clipped_1000 %>% st_bbox())
 
 # view
 ggplot()+
@@ -31,5 +31,25 @@ ggplot()+
   geom_sf(data = nmfs_clipped_300, color = 'orange', fill = NA)+
   geom_sf(data = coast_sf, fill = 'grey')+
   theme_bw()
+
+
+# Filter for area 650
+nmfs_clipped_300_650 <- nmfs_clipped_300 %>%
+  filter(NMFS_AREA == 650)
+
+nmfs_clipped_1000_650 <- nmfs_clipped_1000 %>%
+  filter(NMFS_AREA == 650)
+
+nmfs_650 <- nmfs %>%
+  filter(NMFS_AREA == 650)
+
+# view
+ggplot()+
+  # geom_sf(data = nmfs_650, color = 'red', fill = NA)+
+  #geom_sf(data = nmfs_clipped_1000_650, color = 'blue', fill = NA)+
+  geom_sf(data = nmfs_clipped_300_650, color = 'orange', fill = NA)+
+  geom_sf(data = coast_sf, fill = 'grey')+
+  theme_bw()
+
   
 # remember that these are for visualization purpose - the actual indices are computed over ROMS depth
