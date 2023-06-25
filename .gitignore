@@ -3,7 +3,6 @@
 .RData
 .Ruserdata
 *.zip
-*.csv
 *.png
 
 #big netCDF data
