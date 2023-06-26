@@ -32,16 +32,16 @@ areas <- areas %>% group_by(NMFS_AREA) %>% summarise(geometry = st_union(geometr
 # ------------------------------------------
 # Load data averaged across depth and strata
 # ------------------------------------------
-nep_hind <- read.csv("Data/NEP_10k_indices/nep_avg_hind_300.csv")
+nep_hind <- read.csv("Data/NEP_10k_revised_indices/nep_avg_hind_300.csv")
 nep_hind$simulation = "hindcast"
 
-nep_hist <- read.csv("Data/NEP_10k_indices/nep_avg_wb_hist_300.csv")
+nep_hist <- read.csv("Data/NEP_10k_revised_indices/nep_avg_wb_hist_300.csv")
 nep_hist$simulation = "historical"
 
-nep_ssp126 <- read.csv("Data/NEP_10k_indices/nep_avg_wb_ssp126_300.csv")
+nep_ssp126 <- read.csv("Data/NEP_10k_revised_indices/nep_avg_wb_ssp126_300.csv")
 nep_ssp126$simulation = "ssp126"
 
-nep_ssp585 <- read.csv("Data/NEP_10k_indices/nep_avg_wb_ssp585_300.csv")
+nep_ssp585 <- read.csv("Data/NEP_10k_revised_indices/nep_avg_wb_ssp585_300.csv")
 nep_ssp585$simulation = "ssp585"
 
 # Combine in list
