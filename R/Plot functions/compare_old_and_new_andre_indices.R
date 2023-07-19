@@ -1,7 +1,7 @@
 library(tidyverse)
 
-old_goa_temp_610_to_630_FebApril <- read.csv('Output/Old_goa_temp_610_to_630_FebApril_300M.csv')
-revised_goa_temp_610_to_630_FebApril <- read.csv('Output/goa_temp_610_to_630_FebApril_300M.csv')
+old_goa_temp_610_to_630_FebApril <- read.csv('Output/old_goa_temp_610_to_630_summer_300M')
+revised_goa_temp_610_to_630_FebApril <- read.csv('Output/old_goa_temp_610_to_630_summer_300M.csv')
 
 old_goa_temp_610_to_630_FebApril <- old_goa_temp_610_to_630_FebApril %>%
   mutate(revised = FALSE)
@@ -23,7 +23,7 @@ ggplot(goa_temp_610_to_630_FebApril %>% filter(depthclass == "Surface" & hind ==
   facet_wrap(~simulation)
 
 # - Bottom temp
-ggplot(goa_temp_610_to_630_FebApril %>% filter(depthclass == "Bottom" & hind == "yes"), aes(year, mean_value_dc_610_to_630, colour = revised)) + 
+ggplot(goa_temp_610_to_630_FebApril %>% filter(depthclass == "Bottom" & hind == "yes" & year %in% 2000:2023), aes(year, mean_value_dc_610_to_630, colour = revised)) + 
   geom_line() +
   ylab("Bottom temp (Celsius)") + 
   xlab("Year") + 

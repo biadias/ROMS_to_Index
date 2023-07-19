@@ -164,7 +164,7 @@ goa_temp_610_to_630 <- goa_temp_610_to_630 %>%
   relocate(hind, .before = varname) %>%
   relocate(simulation, .before = varname)
 
-write.csv(goa_temp_610_to_630, 'Output/Old_goa_temperature_610_to_630_300m.csv', row.names = F)
+write.csv(goa_temp_610_to_630, 'Output/goa_temperature_610_to_630_300m.csv', row.names = F)
 
 
 # ---------------------------------------
@@ -192,5 +192,5 @@ ggplot(goa_temp_610_to_630_FebApril %>% filter(depthclass == "Bottom"), aes(year
   facet_wrap(~simulation + hind)
 
 # -- Save
-write.csv(goa_temp_610_to_630_FebApril, 'Output/Old_goa_temp_610_to_630_FebApril_300M.csv', row.names = F)
+write.csv(goa_temp_610_to_630_FebApril, 'Output/goa_temp_610_to_630_summer_300M.csv', row.names = F)
 
