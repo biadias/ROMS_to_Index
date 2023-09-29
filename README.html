@@ -371,12 +371,12 @@ The IPCC projection model was downscaled using the North East Pacific
 Alaska.</p>
 <p>ROMS simulations are referred to as the following:</p>
 <ul>
-<li><p>hindcast: representing model spinup (2000 to 2020),</p></li>
+<li><p>hindcast: representing the final year of the spinup forced with
+observed oceanographic conditions to better represent historical
+conditions (2000 to 2020),</p></li>
 <li><p>projection: GFDL-ESM2M downscaled projection (2015 to
 2099)</p></li>
-<li><p>historical: representing the final year of the spinup forced with
-observed oceanographic conditions to better represent historical
-conditions (1980 to 2014).</p></li>
+<li><p>historical: representing model spinup (1980 to 2014).</p></li>
 </ul>
 <p>Variables from ROMS simulations averaged for each layer and grid cell
 on a monthly time scale were averaged or summed across the following
@@ -401,24 +401,15 @@ folder. They represent the monthly indices either averaged across each
 depth and spatial domain (“nep_avg_…”) or summed across each depth
 domain and then averaged across the spatial domain (“nep_sum…”).</p>
 </div>
-<div id="index-derivation" class="section level1">
-<h1>Index derivation</h1>
-<p>Environmental indices can be derived for each modelers following
-their specific needs. We don’t develop all indices here as individual
-modeler’s needs may vary. But, indices integrated across each spatial
-NMFS management area should be area weighted using the following
-areas.</p>
-</div>
 <div id="delta-correction-overview" class="section level1">
 <h1>Delta correction overview</h1>
 <p>Delta correction is done to correct for shifts in the time series
 between the hindcast and projection. For normally distributed variables
 (<em>Y</em>):</p>
-<p><span class="math display">\[
-X^{proj&#39;}_t=\bar{X}^{hind}_{\bar{T}}+
+<p><span class="math inline">\(X_2\)</span></p>
+<p><span class="math display">\[X^{proj&#39;}_t=\bar{X}^{hind}_{\bar{T}}+
 \left(\frac{\sigma^{hind}_{\bar{T}}}{\sigma^{hist}_{\bar{T}}} *
-\left(X^{proj}_t-\bar{X}_{\bar{T}}^{hist} \right)\right)
-\]</span></p>
+\left(X^{proj}_t-\bar{X}_{\bar{T}}^{hist} \right)\right)\]</span></p>
 <p>where <span class="math inline">\(X^{proj&#39;}_t\)</span> is the
 bias corrected projection index in time-step <span class="math inline">\(t\)</span>, <span class="math inline">\(\bar{X}^{hind}_{\bar{T}}\)</span> is the average
 index value from the hindcast during reference period <span class="math inline">\(T\)</span>, <span class="math inline">\(\sigma^{hind}_{\bar{T}}\)</span> is the standard
@@ -430,11 +421,9 @@ non bias-corrected projection index, <span class="math inline">\(\bar{X}_{\bar{T
 value from historical run during the reference period.</p>
 <p>For log-normally distributed variables the formula can be adjusted as
 follows:</p>
-<p><span class="math display">\[
-X^{proj&#39;}_t=\exp\left(\bar{logX}^{hind}_{\bar{T}}+
-\left(\frac{\sigma^{hind}_{\bar{T}}}{\sigma^{hist}_{\bar{T}}} *
-\left(logX^{proj}_t-\bar{logX}_{\bar{T}}^{hist} \right)\right)\right)
-\]</span></p>
+<p><span class="math display">\[X^{proj&#39;}_t=\exp\left(\bar{logX}^{hind}_{\bar{T}}+\left(\frac{\sigma^{hind}_{\bar{T}}}{\sigma^{hist}_{\bar{T}}}
+* \left(logX^{proj}_t-\bar{logX}_{\bar{T}}^{hist}
+\right)\right)\right)\]</span></p>
 <p>where <span class="math inline">\(T\)</span>, <span class="math inline">\(\sigma^{hind}_{\bar{T}}\)</span> is the standard
 deviation of the log index from the hindcast during the reference
 period, <span class="math inline">\(\sigma^{hist}_{\bar{T}}\)</span> is
@@ -443,7 +432,18 @@ the reference period.</p>
 <p>Because the smallest time step in month, the mean and variance terms
 should be calculated as follows:</p>
 <p>Monthly indices: time-step <span class="math inline">\(t\)</span>
-should be year <span class="math inline">\(y\)</span> and month <span class="math inline">\(m\)</span> (e.g. <span class="math inline">\(t=y,m\)</span>)</p>
+should be year <span class="math inline">\(y\)</span> and month <span class="math inline">\(m\)</span> (e.g. <span class="math inline">\(t=y,m\)</span>). A function to do the bias
+correction is in the <a href="https://github.com/GOA-CLIM/ROMS_to_Index/blob/main/R/Delta_correction.R">R/Delta_correction.r</a></p>
+</div>
+<div id="index-derivation" class="section level1">
+<h1>Index derivation</h1>
+<p>Environmental indices can be derived for each modelers following
+their specific needs. We don’t develop all indices here as individual
+modeler’s needs may vary. But, indices integrated across each spatial
+NMFS management area should be area weighted using the following
+areas.</p>
+<p>A quarto document document exampling some index generation can be
+found <a href="https://github.com/GOA-CLIM/ROMS_to_Index/blob/main/ROMS%20index%20generation.qmd">here</a></p>
 </div>
 <div id="locations-of-monthly-average-output-files-on-loon" class="section level1">
 <h1>Locations of monthly average output files on loon</h1>
@@ -455,8 +455,10 @@ monthly average for January of year 2000</p>
 <p>/ahr0/hermann/goa-output/</p>
 <p><em>The latitude, longitude, and depth locations of each grid point
 are in these files:</em></p>
-<p>zpoints_cgoa.nc</p>
-<p>zpoints_nep.nc</p>
+<ul>
+<li><p>zpoints_cgoa.nc</p></li>
+<li><p>zpoints_nep.nc</p></li>
+</ul>
 <p><em>For variables like temperature and salinity, the relevant
 variables for latitude, longitude and depth are</em> lat_rho, lon_rho,
 zval_rho</p>
@@ -464,11 +466,16 @@ zval_rho</p>
 which are on slightly different (staggered) grids.</p>
 <p><em>The major subdirectories of /ahr0/hermann/goa-output/ are as
 follows:</em></p>
-<p>cgoa 3km model hindcast: monthly_aves</p>
-<p>nep 10km model hindcast: monthly_aves_nep_hind</p>
-<p>nep 10km model GFDL “historical” run: monthly_aves_nep_wb_hist</p>
-<p>nep 10km model GFDL ssp126 projection: monthly_aves_nep_wb_ssp126</p>
-<p>nep 10km model GFDL ssp585 projection: monthly_aves_nep_wb_ssp585</p>
+<ul>
+<li><p>cgoa 3km model hindcast: monthly_aves</p></li>
+<li><p>nep 10km model hindcast: monthly_aves_nep_hind</p></li>
+<li><p>nep 10km model GFDL “historical” run:
+monthly_aves_nep_wb_hist</p></li>
+<li><p>nep 10km model GFDL ssp126 projection:
+monthly_aves_nep_wb_ssp126</p></li>
+<li><p>nep 10km model GFDL ssp585 projection:
+monthly_aves_nep_wb_ssp585</p></li>
+</ul>
 </div>
 <div id="aclim-links" class="section level1">
 <h1>Aclim links</h1>
