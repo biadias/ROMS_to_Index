@@ -47,7 +47,7 @@ The averaged for each NMFS management area to the 300 m or 1,000 m isobath (area
 
 -   All areas
 
-The "raw" monthly data are located in the **"/Data/NEP_10k_indices"** folder with the 300 or 1000 at the end of the file name indicating the isobath they are averaged to. They represent the monthly indices either averaged across each depth and spatial domain ("nep_avg\_...") or summed across each depth domain and then averaged across the spatial domain ("nep_sum...").
+The "raw" monthly data are located in the **"/Data/NEP_10k_revised_indices"** folder with the 300 or 1000 at the end of the file name indicating the isobath they are averaged to. They represent the monthly indices either averaged across each depth and spatial domain ("nep_avg\_...") or summed across each depth domain and then averaged across the spatial domain ("nep_sum..."). The "/Data/NEP_10k_indices" folder are the old indices that had errors in the time-series fixed by Al.
 
 ## Index derivation
 
@@ -63,9 +63,7 @@ X^{proj'}_t=\bar{X}^{hind}_{\bar{T}}+
 \left(X^{proj}_t-\bar{X}_{\bar{T}}^{hist} \right)\right)
 $$
 
-where $X^{proj'}_t$ is the bias corrected projection index in time-step \$t\$, $\bar{X}^{hind}_{\bar{T}}$ is the average index value from the hindcast during reference period $T$, \$
-
-\sigma\^{hind}\_{\bar{T}}\$ is the standard deviation of the index from the hindcast during the reference period, $\sigma^{hist}_{\bar{T}}$ is the standard deviation of the index from the historical run during the reference period, $X^{proj}_t$ is the non bias-corrected projection index, $\bar{X}_{\bar{T}}^{hist}$ is the average value from historical run during the reference period.
+where $X^{proj'}_t$ is the bias corrected projection index in time-step \$t\$, $\bar{X}^{hind}_{\bar{T}}$ is the average index value from the hindcast during reference period $T$, $\sigma^{hind}_{\bar{T}}$ is the standard deviation of the index from the hindcast during the reference period, $\sigma^{hist}_{\bar{T}}$ is the standard deviation of the index from the historical run during the reference period, $X^{proj}_t$ is the non bias-corrected projection index, $\bar{X}_{\bar{T}}^{hist}$ is the average value from historical run during the reference period.
 
 For log-normally distributed variables the formula can be adjusted as follows:
 
@@ -75,9 +73,7 @@ X^{proj'}_t=\exp\left(\bar{logX}^{hind}_{\bar{T}}+
 \left(logX^{proj}_t-\bar{logX}_{\bar{T}}^{hist} \right)\right)\right)
 $$
 
-where $T$, \$
-
-\sigma\^{hind}\_{\bar{T}}\$ is the standard deviation of the log index from the hindcast during the reference period, $\sigma^{hist}_{\bar{T}}$ is the standard deviation of the log indext from the histroical run during the reference period.
+where $T$, $\sigma^{hind}_{\bar{T}}$ is the standard deviation of the log index from the hindcast during the reference period, $\sigma^{hist}_{\bar{T}}$ is the standard deviation of the log indext from the histroical run during the reference period.
 
 Because the smallest time step in month, the mean and variance terms should be calculated as follows:
 
@@ -101,20 +97,20 @@ pacman::p_load(mgcv, dplyr, lubridate, ggplot2, tidyr)
 source("R/Delta_correction.R")
 ```
 
-Load data
+Load data (averaged to 300 m isobath
 
 ```{r}
 # Load data averaged across depth and strata
-nep_hind <- read.csv("Data/NEP_10k_indices/nep_avg_hind.csv")
+nep_hind <- read.csv("Data/NEP_10k_revised_indices/nep_avg_hind_300.csv")
 nep_hind$simulation = "hindcast"
 
-nep_hist <- read.csv("Data/NEP_10k_indices/nep_avg_wb_hist.csv")
+nep_hist <- read.csv("Data/NEP_10k_revised_indices/nep_avg_wb_hist_300.csv")
 nep_hist$simulation = "historical"
 
-nep_ssp126 <- read.csv("Data/NEP_10k_indices/nep_avg_wb_ssp126.csv")
+nep_ssp126 <- read.csv("Data/NEP_10k_revised_indices/nep_avg_wb_ssp126_300.csv")
 nep_ssp126$simulation = "ssp126"
 
-nep_585 <- read.csv("Data/NEP_10k_indices/nep_avg_wb_ssp585.csv")
+nep_585 <- read.csv("Data/NEP_10k_revised_indices/nep_avg_wb_ssp585_300.csv")
 nep_585$simulation = "ssp585"
 
 # Combine in list
@@ -206,20 +202,20 @@ ggplot(goa_SST_610_620, aes(year, value_dc_610_620, colour = simulation)) + geom
   ylab("SST (Celcius)") + xlab("Year") + facet_wrap(~simulation)
 ```
 
-**Example index 4:** mean monthly seasonal small copepod biomass spatial strata 610 and 620 for SSP585 across the water colum
+**Example index 4:** mean monthly seasonal small copepod biomass spatial strata 610 and 620 up to the 300 m isobath for SSP585 across the water column
 
 ```{r}
 # Load data averaged across depth and strata
-nep_hind <- read.csv("Data/NEP_10k_indices/nep_sum_hind.csv")
+nep_hind <- read.csv("Data/NEP_10k_revised_indices/nep_sum_hind_300.csv")
 nep_hind$simulation = "hindcast"
 
-nep_hist <- read.csv("Data/NEP_10k_indices/nep_sum_wb_hist.csv")
+nep_hist <- read.csv("Data/NEP_10k_revised_indices/nep_sum_wb_hist_300.csv")
 nep_hist$simulation = "historical"
 
-nep_ssp126 <- read.csv("Data/NEP_10k_indices/nep_sum_wb_ssp126.csv")
+nep_ssp126 <- read.csv("Data/NEP_10k_revised_indices/nep_sum_wb_ssp126_300.csv")
 nep_ssp126$simulation = "ssp126"
 
-nep_585 <- read.csv("Data/NEP_10k_indices/nep_sum_wb_ssp585.csv")
+nep_585 <- read.csv("Data/NEP_10k_revised_indices/nep_sum_wb_ssp585_300.csv")
 nep_585$simulation = "ssp585"
 
 # Combine in list

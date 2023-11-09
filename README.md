@@ -43,21 +43,15 @@ The "raw" monthly data are located in the "/Data/NEP_10k_indices" folder. They r
 
 Delta correction is done to correct for shifts in the time series between the hindcast and projection. For normally distributed variables (*Y*):
 
-$$
-X^{proj'}_t=\bar{X}^{hind}_{\bar{T}}+
-\left(\frac{\sigma^{hind}_{\bar{T}}}{\sigma^{hist}_{\bar{T}}} * 
-\left(X^{proj}_t-\bar{X}_{\bar{T}}^{hist} \right)\right)
-$$
+$X_2$
+
+$$X^{proj'}_t=\bar{X}^{hind}_{\bar{T}}+ \left(\frac{\sigma^{hind}_{\bar{T}}}{\sigma^{hist}_{\bar{T}}} * \left(X^{proj}_t-\bar{X}_{\bar{T}}^{hist} \right)\right)$$
 
 where $X^{proj'}_t$ is the bias corrected projection index in time-step $t$, $\bar{X}^{hind}_{\bar{T}}$ is the average index value from the hindcast during reference period $T$, $\sigma^{hind}_{\bar{T}}$ is the standard deviation of the index from the hindcast during the reference period, $\sigma^{hist}_{\bar{T}}$ is the standard deviation of the index from the historical run during the reference period, $X^{proj}_t$ is the non bias-corrected projection index, $\bar{X}_{\bar{T}}^{hist}$ is the average value from historical run during the reference period.
 
 For log-normally distributed variables the formula can be adjusted as follows:
 
-$$
-X^{proj'}_t=\exp\left(\bar{logX}^{hind}_{\bar{T}}+
-\left(\frac{\sigma^{hind}_{\bar{T}}}{\sigma^{hist}_{\bar{T}}} * 
-\left(logX^{proj}_t-\bar{logX}_{\bar{T}}^{hist} \right)\right)\right)
-$$
+$$X^{proj'}_t=\exp\left(\bar{logX}^{hind}_{\bar{T}}+\left(\frac{\sigma^{hind}_{\bar{T}}}{\sigma^{hist}_{\bar{T}}} * \left(logX^{proj}_t-\bar{logX}_{\bar{T}}^{hist} \right)\right)\right)$$
 
 where $T$, $\sigma^{hind}_{\bar{T}}$ is the standard deviation of the log index from the hindcast during the reference period, $\sigma^{hist}_{\bar{T}}$ is the standard deviation of the log indext from the histroical run during the reference period.
 
