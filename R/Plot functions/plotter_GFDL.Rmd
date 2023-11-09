@@ -1,0 +1,176 @@
+---
+title: "Viewer of ROMS NEP 10K indexes for GOA-CLIM (2010-2030)"
+output:
+  html_document:
+    toc: yes
+    toc_float: yes
+    code_folding: hide
+  pdf_document:
+    toc: yes
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE,warnings=FALSE,message = FALSE)
+library(tidyverse)
+library(tidync)
+library(magrittr)
+library(cowplot)
+library(here)
+library(viridis)
+library(reshape2)
+library(RColorBrewer)
+library(lubridate)
+library(ggh4x)
+
+# ggplot theme
+plot_theme <-   theme_bw()+
+  theme(text=element_text(family="sans",size=12,color="black"),
+        legend.text = element_text(size=12),
+        axis.title=element_text(family="sans",size=14,color="black"),
+        axis.text=element_text(family="sans",size=12,color="black"),
+        panel.grid.major = element_line(color="gray50",linetype=3))
+theme_set(plot_theme)
+
+options(dplyr.summarise.inform = FALSE)
+```
+
+```{r}
+nep_avg_hind <- read.csv('../../Data/output_from_loon/nep_avg_revised_hind_300.csv')
+nep_sum_hind <- read.csv('../../Data/output_from_loon/nep_sum_revised_hind_300.csv')
+
+nep_avg_hist <- read.csv('../../Data/output_from_loon/nep_avg_wb_hist_300.csv')
+nep_sum_hist <- read.csv('../../Data/output_from_loon/nep_sum_wb_hist_300.csv')
+
+nep_avg_126 <- read.csv('../../Data/output_from_loon/nep_avg_wb_ssp126_300.csv')
+nep_sum_126 <- read.csv('../../Data/output_from_loon/nep_sum_wb_ssp126_300.csv')
+
+nep_avg_245 <- read.csv('../../Data/output_from_loon/nep_avg_wb_ssp245_300.csv')
+nep_sum_245 <- read.csv('../../Data/output_from_loon/nep_sum_wb_ssp245_300.csv')
+
+nep_avg_585 <- read.csv('../../Data/output_from_loon/nep_avg_wb_ssp585_300.csv')
+nep_sum_585 <- read.csv('../../Data/output_from_loon/nep_sum_wb_ssp585_300.csv')
+```
+
+```{r}
+# Add column to identify which run the data is from, then bind all together
+
+nep_avg_hind <- nep_avg_hind %>% mutate(Run = 'Hindcast') %>% mutate(Year = year(date))# %>% filter(between(Year,2010,2030))
+nep_sum_hind <- nep_sum_hind %>% mutate(Run = 'Hindcast') %>% mutate(Year = year(date))# %>% filter(between(Year,2010,2030))
+
+nep_avg_hist <- nep_avg_hist %>% mutate(Run = 'Historical') %>% mutate(Year = year(date))# %>% filter(between(Year,2010,2030))
+nep_sum_hist <- nep_sum_hist %>% mutate(Run = 'Historical') %>% mutate(Year = year(date))# %>% filter(between(Year,2010,2030))
+
+nep_avg_126 <- nep_avg_126 %>% mutate(Run = 'SSP126') %>% mutate(Year = year(date))# %>% filter(between(Year,2010,2030))
+nep_sum_126 <- nep_sum_126 %>% mutate(Run = 'SSP126') %>% mutate(Year = year(date))# %>% filter(between(Year,2010,2030))
+
+nep_avg_245 <- nep_avg_245 %>% mutate(Run = 'SSP245') %>% mutate(Year = year(date))# %>% filter(between(Year,2010,2030))
+nep_sum_245 <- nep_sum_245 %>% mutate(Run = 'SSP245') %>% mutate(Year = year(date))# %>% filter(between(Year,2010,2030))
+
+nep_avg_585 <- nep_avg_585 %>% mutate(Run = 'SSP585') %>% mutate(Year = year(date))# %>% filter(between(Year,2010,2030))
+nep_sum_585 <- nep_sum_585 %>% mutate(Run = 'SSP585') %>% mutate(Year = year(date))# %>% filter(between(Year,2010,2030))
+
+nep_roms <- rbind(nep_avg_hind, nep_sum_hind, nep_avg_hist, nep_sum_hist, nep_avg_126, nep_sum_126, nep_avg_245, nep_sum_245, nep_avg_585, nep_sum_585)
+```
+
+```{r}
+# Thinning out the time series
+# Moving average for 2 years (24 time steps)
+# This is only for visualization purposes
+
+library(zoo)
+
+window_size <- 24 # averaging every year
+
+nep_roms_avg <- nep_roms %>%
+  group_by(Run, NMFS_AREA, depthclass, summaryStat, varname) %>%
+  arrange(date) %>%
+  mutate(moving_avg = rollapply(value, width = window_size, FUN = mean, fill = NA, align = "center"))
+```
+
+```{r abun fxn,include=F,echo=F}
+# Plots
+# Averages 
+plot_avg <- function(this_var){
+  # get the attributes associated with each functional group
+  
+  this_dat <- nep_roms_avg %>%
+    filter(summaryStat == 'mean',
+           varname == this_var, 
+           depthclass == 'Bottom')
+  
+  # get unit
+  this_unit <- this_dat %>% pull(unit) %>% unique()
+  
+  plot_out <- this_dat %>%
+    ggplot(aes(x = as.Date(date), y = moving_avg, group = Run, color = Run))+
+    geom_line(linewidth = 1)+
+    geom_vline(xintercept = as.Date('2020-12-31'), linetype = 'dashed', color = 'grey', linewidth = 1)+
+    #geom_point()+
+    #scale_color_manual(values = c('navy', 'firebrick'))+
+    plot_theme+
+    labs(x = '', y = this_unit)+
+    facet_wrap(~NMFS_AREA, scales = 'free', ncol = 1)
+  
+  return(plot_out)
+}
+
+# Sums 
+plot_sum <- function(this_var){
+  # get the attributes associated with each functional group
+  
+  this_dat <- nep_roms_avg %>%
+    filter(summaryStat != 'mean',
+           varname == this_var, 
+           depthclass == 'All') 
+  
+  # get unit
+  this_unit <- this_dat %>% pull(unit) %>% unique()
+  this_unit <- gsub('3', '2', this_unit)
+  
+  plot_out <- this_dat %>%
+    ggplot(aes(x = as.Date(date), y = moving_avg, group = Run, color = Run))+
+    geom_line(linewidth = 1)+
+    geom_vline(xintercept = as.Date('2020-12-31'), linetype = 'dashed', color = 'grey', linewidth = 1)+
+    #geom_point()+
+    #scale_color_manual(values = c('navy'))+
+    plot_theme+
+    labs(x = '', y = this_unit)+
+    facet_wrap(~NMFS_AREA, scales = 'free', ncol = 1)
+  
+  return(plot_out)
+}
+```
+
+```{r calc plots}
+# Here we calculate and store the actual plots
+
+# avg
+varnames_avg <- nep_avg_hind %>% pull(varname) %>% unique()
+varplots_avg <- purrr::map(varnames_avg,~plot_avg(.))
+
+# sum
+varnames_sum <- nep_sum_hind %>% pull(varname) %>% unique()
+varplots_sum <- purrr::map(varnames_sum,~plot_sum(.))
+```
+
+# NEP 10K - averages {.tabset .tabset-pills}
+
+For trend visualization, 24-month rolling averages are displayed here. Data is in monthly time steps.
+
+```{r avg,fig.height=25,fig.width=10,results='asis'}
+for(i in 1:length(varplots_avg)){
+  cat("  \n##",  varnames_avg[i],"  \n")
+  print(varplots_avg[[i]]) 
+  cat("  \n")
+}
+```
+
+# NEP 10K - total {.tabset .tabset-pills}
+
+```{r sum,fig.height=25,fig.width=10,results='asis'}
+for(i in 1:length(varplots_sum)){
+  cat("  \n##",  varnames_sum[i],"  \n")
+  print(varplots_sum[[i]]) 
+  cat("  \n")
+}
+```
