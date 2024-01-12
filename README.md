@@ -45,19 +45,23 @@ Delta correction is done to correct for shifts in the time series between the hi
 
 $X_2$
 
-$$X^{proj'}_t=\bar{X}^{hind}_{\bar{T}}+ \left(\frac{\sigma^{hind}_{\bar{T}}}{\sigma^{hist}_{\bar{T}}} * \left(X^{proj}_t-\bar{X}_{\bar{T}}^{hist} \right)\right)$$
+```math
+X^{proj'}_t=\bar{X}^{hind}_{\bar{T}}+ \left(\frac{\sigma^{hind}_{\bar{T}}}{\sigma^{hist}_{\bar{T}}} * \left(X^{proj}_t-\bar{X}_{\bar{T}}^{hist} \right)\right)
+```
 
 where $`X^{proj'}_t`$ is the bias corrected projection index in time-step $t$, $`\bar{X}^{hind}_{\bar{T}}`$ is the average index value from the hindcast during reference period $T$, $`\sigma^{hind}_{\bar{T}}`$ is the standard deviation of the index from the hindcast during the reference period, $`\sigma^{hist}_{\bar{T}}`$ is the standard deviation of the index from the historical run during the reference period, $`X^{proj}_t`$ is the non bias-corrected projection index, $`\bar{X}_{\bar{T}}^{hist}`$ is the average value from historical run during the reference period.
 
 For log-normally distributed variables the formula can be adjusted as follows:
 
-$$X^{proj'}_t=\exp\left(\bar{logX}^{hind}_{\bar{T}}+\left(\frac{\sigma^{hind}_{\bar{T}}}{\sigma^{hist}_{\bar{T}}} * \left(logX^{proj}_t-\bar{logX}_{\bar{T}}^{hist} \right)\right)\right)$$
+```math
+X^{proj'}_t=\exp\left(\bar{logX}^{hind}_{\bar{T}}+\left(\frac{\sigma^{hind}_{\bar{T}}}{\sigma^{hist}_{\bar{T}}} * \left(logX^{proj}_t-\bar{logX}_{\bar{T}}^{hist} \right)\right)\right)
+```
 
-where $T$, $\sigma^{hind}_{\bar{T}}$ is the standard deviation of the log index from the hindcast during the reference period, $\sigma^{hist}_{\bar{T}}$ is the standard deviation of the log indext from the histroical run during the reference period.
+where $T$, $`\sigma^{hind}_{\bar{T}}`$ is the standard deviation of the log index from the hindcast during the reference period, $`\sigma^{hist}_{\bar{T}}`$ is the standard deviation of the log index from the historical run during the reference period.
 
 Because the smallest time step in month, the mean and variance terms should be calculated as follows:
 
-Monthly indices: time-step $t$ should be year $y$ and month $m$ (e.g. $t=y,m$). A function to do the bias correction is in the [R/Delta_correction.r](https://github.com/GOA-CLIM/ROMS_to_Index/blob/main/R/Delta_correction.R)
+Monthly indices: time-step $t$ should be year $y$ and month $m$ (e.g. $`t=y,m`$). A function to do the bias correction is in the [R/Delta_correction.r](https://github.com/GOA-CLIM/ROMS_to_Index/blob/main/R/Delta_correction.R)
 
 
 # Index derivation
