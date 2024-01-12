@@ -47,7 +47,7 @@ $X_2$
 
 $$X^{proj'}_t=\bar{X}^{hind}_{\bar{T}}+ \left(\frac{\sigma^{hind}_{\bar{T}}}{\sigma^{hist}_{\bar{T}}} * \left(X^{proj}_t-\bar{X}_{\bar{T}}^{hist} \right)\right)$$
 
-where $X_{t}^{proj'}$ is the bias corrected projection index in time-step $t$, ``$\bar{X}^{hind}_{\bar{T}}$`` is the average index value from the hindcast during reference period $T$, $\sigma^{hind}_{\bar{T}}$ is the standard deviation of the index from the hindcast during the reference period, $\sigma^{hist}_{\bar{T}}$ is the standard deviation of the index from the historical run during the reference period, $X^{proj}_t$ is the non bias-corrected projection index, $\bar{X}_{\bar{T}}^{hist}$ is the average value from historical run during the reference period.
+where $X_{t}^{proj'}$ is the bias corrected projection index in time-step $t$, $`\bar{X}^{hind}_{\bar{T}}`$ is the average index value from the hindcast during reference period $T$, $\sigma^{hind}_{\bar{T}}$ is the standard deviation of the index from the hindcast during the reference period, $\sigma^{hist}_{\bar{T}}$ is the standard deviation of the index from the historical run during the reference period, $X^{proj}_t$ is the non bias-corrected projection index, $\bar{X}_{\bar{T}}^{hist}$ is the average value from historical run during the reference period.
 
 For log-normally distributed variables the formula can be adjusted as follows:
 
