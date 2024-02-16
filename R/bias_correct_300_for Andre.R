@@ -180,13 +180,13 @@ goa_temp_610_to_630_FebApril <- goa_temp_610_to_630 %>%
 
 # -- Plot
 ggplot(goa_temp_610_to_630_FebApril %>% filter(depthclass == "Surface"), aes(year, mean_value_dc_610_to_630, colour = simulation)) + 
-  geom_line() +
+  geom_line(size=2) +
   ylab("SST (Celsius)") + 
   xlab("Year") + 
   facet_wrap(~simulation + hind)
 
 ggplot(goa_temp_610_to_630_FebApril %>% filter(depthclass == "Bottom"), aes(year, mean_value_dc_610_to_630, colour = simulation)) + 
-  geom_line() +
+  geom_line(size=2) +
   ylab("Bottom temp (Celsius)") + 
   xlab("Year") + 
   facet_wrap(~simulation + hind)
