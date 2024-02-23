@@ -107,7 +107,7 @@ delta_correction <- function(
     hindcast <- hindcast %>%
       arrange(year,month) %>%
       mutate(value_dc = value) %>%
-      select(NMFS_AREA, depthclass, varname, year, month, date, value, value_dc, unit)
+      dplyr::select(NMFS_AREA, depthclass, varname, year, month, date, value, value_dc, unit)
     
     full_time_series <- rbind(projection %>% filter(year > max(hindcast$year)), 
                         historical %>% filter(year < min(hindcast$year)), 
