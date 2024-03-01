@@ -137,7 +137,7 @@ ssp585_biascorrected_hind <- delta_correction(
 
 
 # - Plot differences between the bias-corrected and raw runs
-ssp585_biascorrected_nohind %>%
+ssp585_nohind_630 <- ssp585_biascorrected_nohind %>%
   select(-unit,-value) %>%
   left_join(
     nep_ssp585 %>%
@@ -149,14 +149,18 @@ ssp585_biascorrected_nohind %>%
   select(-year,-month) %>%
   pivot_longer(c(value, value_dc)) %>%
   filter(varname == 'temp' &
-           depthclass %in% c('Surface', 'Bottom') & NMFS_AREA == 630) %>%
-  ggplot(aes(x = date, y = value, color = name)) +
+           depthclass %in% c('Surface', 'Bottom') & NMFS_AREA == 630)
+ 
+
+ssp585_nohind_630 %>% ggplot(aes(x = date, y = value, color = name)) +
   geom_line() +
   geom_point() +
   theme_bw() +
+  scale_color_manual(labels = c("Temp", "Temp \nDelta corrected"), values=c("#56B4E9", "#D55E00"))+
+  theme(legend.title = element_blank())+
   facet_wrap(depthclass ~ NMFS_AREA)
 
-ssp585_biascorrected_nohind %>%
+ssp585_nohind_640 <- ssp585_biascorrected_nohind %>%
   select(-unit,-value) %>%
   left_join(
     nep_ssp585 %>%
@@ -168,11 +172,16 @@ ssp585_biascorrected_nohind %>%
   select(-year,-month) %>%
   pivot_longer(c(value, value_dc)) %>%
   filter(varname == 'temp' &
-           depthclass %in% c('Surface', 'Bottom') & NMFS_AREA == 640) %>%
-  ggplot(aes(x = date, y = value, color = name)) +
+           depthclass %in% c('Surface', 'Bottom') & NMFS_AREA == 640) 
+
+
+
+ssp585_nohind_640 %>% ggplot(aes(x = date, y = value, color = name)) +
   geom_line() +
   geom_point() +
   theme_bw() +
+  scale_color_manual(labels = c("Temp", "Temp \nDelta corrected"), values=c("#56B4E9", "#D55E00"))+
+  theme(legend.title = element_blank())+
   facet_wrap(depthclass ~ NMFS_AREA)
 
 
@@ -303,9 +312,11 @@ ggplot(
   goa_temp_630_to_640_FebApril %>% filter(depthclass == "Surface"),
   aes(year, mean_value_dc_630_to_640, colour = hind, alpha=hind)
 ) +
+  geom_rect(aes(xmin=2014, xmax=2016, ymin=0, ymax=Inf), fill="grey", color= "grey", alpha=0.1)+
+  geom_rect(aes(xmin=2019, xmax=2020, ymin=0, ymax=Inf), fill="grey", color= "grey", alpha=0.1)+
   geom_line(size = 2) +
   scale_color_manual(values=c("#56B4E9", "#D55E00"))+
-  scale_alpha_manual(values=c(0.8, 0.5))+
+  scale_alpha_manual(values=c(1, 0.5))+
   ylab("SST (Celsius)") +
   xlab("Year Surface") +
   facet_wrap( ~simulation)
@@ -314,9 +325,11 @@ ggplot(
   goa_temp_630_to_640_FebApril %>% filter(depthclass == "Bottom"),
   aes(year, mean_value_dc_630_to_640, colour = hind, alpha=hind)
 ) +
+  geom_rect(aes(xmin=2014, xmax=2016, ymin=0, ymax=Inf), fill="grey", color= "grey", alpha=0.1)+
+  geom_rect(aes(xmin=2019, xmax=2020, ymin=0, ymax=Inf), fill="grey", color= "grey", alpha=0.1)+
   geom_line(size = 2) +
   scale_color_manual(values=c("#56B4E9", "#D55E00"))+
-  scale_alpha_manual(values=c(0.8, 0.5))+
+  scale_alpha_manual(values=c(1, 0.5))+
   ylab("Bottom temp (Celsius)") +
   xlab("Year Bottom") +
   facet_wrap( ~ simulation)
