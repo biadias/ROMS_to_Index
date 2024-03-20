@@ -1,12 +1,12 @@
 #' Function to run delta correction on data
 #'
-#' @param hindcast 
-#' @param historical 
-#' @param projection 
-#' @param ref_yrs 
-#' @param lognormal 
-#' @param smooth 
-#' @param include_hindcast 
+#' @param hindcast hindcast time series
+#' @param historical historical time series
+#' @param projection projection time series
+#' @param ref_yrs reference years for the delta correction
+#' @param lognormal do the delta-correction on the log scale (TRUE/FALSE)
+#' @param use_sd use the ratio of the sd in the delta-correction (TRUE/FALSE)
+#' @param include_hindcast use the hindcast in the output (TRUE/FALSE)
 #'
 #' @return
 #' @export
@@ -18,7 +18,7 @@ delta_correction <- function(
     projection = fut,
     ref_yrs = 2000:2014,
     lognormal = FALSE,
-    smooth = FALSE,
+    use_sd = TRUE,
     include_hindcast = FALSE){
   
   # Convert to log
@@ -47,7 +47,7 @@ delta_correction <- function(
   # calculate index using delta correction for projection
   # - Merge projection with hist and hind summary statistics 
   projection <- Reduce(function(x, y) merge(x, y, all=TRUE, by = c("month", "varname", "depthclass", "NMFS_AREA")), 
-                           list(projection, goa_clim_hist, goa_clim_hind)) %>%
+                       list(projection, goa_clim_hist, goa_clim_hind)) %>%
     arrange(varname, year, month)
   
   # - Merge historical run with hist and hind summary statistics 
@@ -57,34 +57,64 @@ delta_correction <- function(
   
   # - Calculate index
   if(!lognormal){
-    # projection
-  projection <- projection %>%
-    group_by(month, varname, depthclass, NMFS_AREA) %>%
-    mutate(value_dc = mean_hind + (sd_hind/sd_hist * (value - mean_hist))) %>%
-    ungroup() %>% arrange(year, month) %>%
-    select(NMFS_AREA, depthclass, varname, year, month, date, value, value_dc, unit)
-  
-  # historical
-  historical <- historical %>%
-    group_by(month, varname, depthclass, NMFS_AREA) %>%
-    mutate(value_dc = mean_hind + (sd_hind/sd_hist * (value - mean_hist))) %>%
-    ungroup() %>% arrange(year, month) %>%
-    select(NMFS_AREA, depthclass, varname, year, month, date, value, value_dc, unit)
-  
+    # Projection
+    if(use_sd){
+      
+      # - Delta-correct using ratio of SD
+      projection <- projection %>%
+        group_by(month, varname, depthclass, NMFS_AREA) %>%
+        mutate(value_dc = mean_hind + (sd_hind/sd_hist * (value - mean_hist))) %>%
+        ungroup() %>% arrange(year, month) %>%
+        select(NMFS_AREA, depthclass, varname, year, month, date, value, value_dc, unit)
+    } else {
+      
+      # - Delta-correct NOT using ratio of SD
+      projection <- projection %>%
+        group_by(month, varname, depthclass, NMFS_AREA) %>%
+        mutate(value_dc = mean_hind + ((value - mean_hist))) %>%
+        ungroup() %>% arrange(year, month) %>%
+        select(NMFS_AREA, depthclass, varname, year, month, date, value, value_dc, unit)
+    }
+    
+    # Historical
+    if(use_sd){
+      
+      # - Delta-correct using ratio of SD
+      historical <- historical %>%
+        group_by(month, varname, depthclass, NMFS_AREA) %>%
+        mutate(value_dc = mean_hind + (sd_hind/sd_hist * (value - mean_hist))) %>%
+        ungroup() %>% arrange(year, month) %>%
+        select(NMFS_AREA, depthclass, varname, year, month, date, value, value_dc, unit)
+    } else {
+      
+      # - Delta-correct NOT using ratio of SD
+      historical <- historical %>%
+        group_by(month, varname, depthclass, NMFS_AREA) %>%
+        mutate(value_dc = mean_hind + ((value - mean_hist))) %>%
+        ungroup() %>% arrange(year, month) %>%
+        select(NMFS_AREA, depthclass, varname, year, month, date, value, value_dc, unit)
+    }
   }
   
   if(lognormal){
-    projection <- projection %>%
-      group_by(month, varname, depthclass, NMFS_AREA) %>%
-      mutate(value_dc =  exp(mean_hind + (sd_hind/sd_hist * (log(value) - mean_hist)))) %>%
-      ungroup() %>% arrange(year, month) %>%
-      select(NMFS_AREA, depthclass, varname, year, month, date, value, value_dc, unit)
     
-    historical <- historical %>%
-      group_by(month, varname, depthclass, NMFS_AREA) %>%
-      mutate(value_dc =  exp(mean_hind + (sd_hind/sd_hist * (log(value) - mean_hist)))) %>%
-      ungroup() %>% arrange(year, month) %>%
-      select(NMFS_AREA, depthclass, varname, year, month, date, value, value_dc, unit)
+    if(use_sd){
+      
+      # - Delta-correct using ratio of SD
+      projection <- projection %>%
+        group_by(month, varname, depthclass, NMFS_AREA) %>%
+        mutate(value_dc =  exp(mean_hind + (sd_hind/sd_hist * (log(value) - mean_hist)))) %>%
+        ungroup() %>% arrange(year, month) %>%
+        select(NMFS_AREA, depthclass, varname, year, month, date, value, value_dc, unit)
+    } else {
+      
+      # - Delta-correct NOT using ratio of SD
+      historical <- historical %>%
+        group_by(month, varname, depthclass, NMFS_AREA) %>%
+        mutate(value_dc =  exp(mean_hind + ((log(value) - mean_hist)))) %>%
+        ungroup() %>% arrange(year, month) %>%
+        select(NMFS_AREA, depthclass, varname, year, month, date, value, value_dc, unit)
+    }
     
     # Back transform historical and projection and hindcast
     historical$value = exp(historical$value)
@@ -110,8 +140,8 @@ delta_correction <- function(
       select(NMFS_AREA, depthclass, varname, year, month, date, value, value_dc, unit)
     
     full_time_series <- rbind(projection %>% filter(year > max(hindcast$year)), 
-                        historical %>% filter(year < min(hindcast$year)), 
-                        hindcast) %>% 
+                              historical %>% filter(year < min(hindcast$year)), 
+                              hindcast) %>% 
       arrange(year,month)
     
   }
