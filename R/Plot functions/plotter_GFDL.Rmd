@@ -1,5 +1,5 @@
 ---
-title: "Viewer of ROMS NEP 10K indexes for GOA-CLIM (2010-2030)"
+title: "Viewer of ROMS NEP 10K indexes for GOA-CLIM (1980-2100)"
 output:
   html_document:
     toc: yes
@@ -9,8 +9,9 @@ output:
     toc: yes
 ---
 
-```{r setup, include=FALSE}
+```{r setup, include=FALSE, warning=F}
 knitr::opts_chunk$set(echo = FALSE,warnings=FALSE,message = FALSE)
+
 library(tidyverse)
 library(tidync)
 library(magrittr)
@@ -34,7 +35,7 @@ theme_set(plot_theme)
 options(dplyr.summarise.inform = FALSE)
 ```
 
-```{r}
+```{r, warning=F}
 nep_avg_hind <- read.csv('../../Data/output_from_loon/nep_avg_revised_hind_300.csv')
 nep_sum_hind <- read.csv('../../Data/output_from_loon/nep_sum_revised_hind_300.csv')
 
@@ -51,7 +52,7 @@ nep_avg_585 <- read.csv('../../Data/output_from_loon/nep_avg_wb_ssp585_300.csv')
 nep_sum_585 <- read.csv('../../Data/output_from_loon/nep_sum_wb_ssp585_300.csv')
 ```
 
-```{r}
+```{r, warning=F}
 # Add column to identify which run the data is from, then bind all together
 
 nep_avg_hind <- nep_avg_hind %>% mutate(Run = 'Hindcast') %>% mutate(Year = year(date))# %>% filter(between(Year,2010,2030))
@@ -72,7 +73,7 @@ nep_sum_585 <- nep_sum_585 %>% mutate(Run = 'SSP585') %>% mutate(Year = year(dat
 nep_roms <- rbind(nep_avg_hind, nep_sum_hind, nep_avg_hist, nep_sum_hist, nep_avg_126, nep_sum_126, nep_avg_245, nep_sum_245, nep_avg_585, nep_sum_585)
 ```
 
-```{r}
+```{r, warning=F}
 # Thinning out the time series
 # Moving average for 2 years (24 time steps)
 # This is only for visualization purposes
@@ -87,7 +88,7 @@ nep_roms_avg <- nep_roms %>%
   mutate(moving_avg = rollapply(value, width = window_size, FUN = mean, fill = NA, align = "center"))
 ```
 
-```{r abun fxn,include=F,echo=F}
+```{r abun fxn,include=F,echo=F, warning=F}
 # Plots
 # Averages 
 plot_avg <- function(this_var){
@@ -96,7 +97,7 @@ plot_avg <- function(this_var){
   this_dat <- nep_roms_avg %>%
     filter(summaryStat == 'mean',
            varname == this_var, 
-           depthclass == 'Bottom')
+           depthclass == 'Surface')
   
   # get unit
   this_unit <- this_dat %>% pull(unit) %>% unique()
@@ -141,7 +142,7 @@ plot_sum <- function(this_var){
 }
 ```
 
-```{r calc plots}
+```{r calc plots, warning=F}
 # Here we calculate and store the actual plots
 
 # avg
@@ -155,9 +156,11 @@ varplots_sum <- purrr::map(varnames_sum,~plot_sum(.))
 
 # NEP 10K - averages {.tabset .tabset-pills}
 
+Depth: Surface (top 10 m of the water column).
+
 For trend visualization, 24-month rolling averages are displayed here. Data is in monthly time steps.
 
-```{r avg,fig.height=25,fig.width=10,results='asis'}
+```{r avg,fig.height=25,fig.width=10,results='asis', warning=F}
 for(i in 1:length(varplots_avg)){
   cat("  \n##",  varnames_avg[i],"  \n")
   print(varplots_avg[[i]]) 
@@ -167,7 +170,9 @@ for(i in 1:length(varplots_avg)){
 
 # NEP 10K - total {.tabset .tabset-pills}
 
-```{r sum,fig.height=25,fig.width=10,results='asis'}
+Depth: entire water column.
+
+```{r sum,fig.height=25,fig.width=10,results='asis', warning=F}
 for(i in 1:length(varplots_sum)){
   cat("  \n##",  varnames_sum[i],"  \n")
   print(varplots_sum[[i]]) 
