@@ -16,7 +16,7 @@ delta_correction <- function(
     hindcast = hnd,
     historical = hist,
     projection = fut,
-    ref_yrs = 2000:2014,
+    ref_yrs = 1990:2014,
     lognormal = FALSE,
     use_sd = TRUE,
     include_hindcast = FALSE){
@@ -125,7 +125,7 @@ delta_correction <- function(
   # - Combine time series
   # two options:
   # 1: historical + projection
-  # 2: historical (<2000) + hindcast (2000-2020) + projection (>2020)
+  # 2: historical (<1990) + hindcast (1990-2020) + projection (>2020)
   
   if(!include_hindcast){
     

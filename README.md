@@ -64,7 +64,11 @@ where $T$, $`\sigma^{hind}_{\bar{T}}`$ is the standard deviation of the log inde
 
 Because the smallest time step in month, the mean and variance terms should be calculated as follows:
 
-Monthly indices: time-step $t$ should be year $y$ and month $m$ (e.g. $`t=y,m`$). A function to do the bias correction is in the [R/Delta_correction.r](https://github.com/GOA-CLIM/ROMS_to_Index/blob/main/R/Delta_correction.R)
+Monthly indices: time-step $t$ should be year $y$ and month $m$ (e.g. $`t=y,m`$). A function to do the bias correction is in the [R/Delta_correction.r](https://github.com/GOA-CLIM/ROMS_to_Index/blob/main/R/Delta_correction.R).
+
+Users can decide to apply a delta correction method that does not use the ratio between the standard deviations as scaling factor. Scaling by the standard deviation may result in artefacts being introduced, for example if one of the $\sigma$ values is particularly high. This should not happen much at the spatial and temporal resolution used here, but it has been a known issue in Atlantis (which uses daily time steps and a small spatial scale, resulting in fewer ROMS points per calculation) and in some ACLIM applications. The default is `use_sd = TRUE`.
+
+When doing the delta correction, users can decide whether they want the end product to be a time series that consists of the bias-corrected historical run and projection, or historical run, hindcast, and projection. The second option splices the hindcast (which incorporates observations) into the full bias-corrected time series. Analysts that are interested in exploring the effects of recent climate events in the GOA (e.g., the heat wave) may want to use `include_hindcast = TRUE`. If projections are the focus, this becomes less important. 
 
 
 # Index derivation
