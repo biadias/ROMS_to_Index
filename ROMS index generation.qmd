@@ -1,5 +1,5 @@
 ---
-title: "Delta correction and gam smooth"
+title: "Delta correction and examples of ROMS-NPZ indices for GOACLIM models"
 author: "Grant Adams"
 format: html
 editor: visual
