@@ -129,8 +129,8 @@ interpolate_var <- function(romsfile, variable, time_step, this_roms_vars, this_
     mutate(maxdepth = max(abs(depth)),
            depthclass = case_when(
              abs(depth) <= 10 ~ "Surface", # this means that for very shallow points (h = 10) we only get surface variables
-             abs(depth) == maxdepth ~ "Bottom",
-             abs(depth) > 10 & abs(depth) < maxdepth ~ "Midwater"
+             abs(depth) >= (maxdepth-10) ~ "Bottom",
+             abs(depth) > 10 & abs(depth) < (maxdepth-10) ~ "Midwater"
            )) %>%
     ungroup() %>%
     filter(maxdepth <= abs(max_depth) & maxdepth >= abs(min_depth)) # now just a sanity check but should no longer be needed
