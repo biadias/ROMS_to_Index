@@ -19,7 +19,7 @@ Projections of environmental variables biomass are derived from a downscaled Int
 
 ROMS simulations are referred to as the following:
 
--   **hindcast**: representing the final year of the spinup forced with observed oceanographic conditions to better represent historical conditions (2000 to 2020),
+-   **hindcast**: representing the final years of the spinup forced with observed oceanographic conditions to better represent historical conditions (1990 to 2020),
 
 -   **projection**: GFDL-ESM2M downscaled projection (2015 to 2099)
 
@@ -43,11 +43,11 @@ The averaged for each NMFS management area to the 300 m or 1,000 m isobath (area
 
 -   640 area is 32560976631 $m^2$ for 300 m isobath and 37270389681 $m^2$ for 1,000 m isobath
 
--   650 area is 25178840116 $m^2$ for 300 m isobath and 43952466109 $m^2$ for 1,000 m isobath
+-   650 area is 36726651409 $m^2$ for 300 m isobath and 43952466109 $m^2$ for 1,000 m isobath
 
 -   All areas
 
-The "raw" monthly data are located in the **"/Data/NEP_10k_revised_indices"** folder with the 300 or 1000 at the end of the file name indicating the isobath they are averaged to. They represent the monthly indices either averaged across each depth and spatial domain ("nep_avg\_...") or summed across each depth domain and then averaged across the spatial domain ("nep_sum..."). The "/Data/NEP_10k_indices" folder are the old indices that had errors in the time-series fixed by Al.
+The "raw" monthly data are located in the **"/Data/NEP_10k_revised_indices"** folder with the 300 or 1000 at the end of the file name indicating the isobath they are averaged to. They represent the monthly indices either averaged across each depth and spatial domain ("nep_avg\_...") or summed across each depth domain and then averaged across the spatial domain ("nep_sum\_..."). The "/Data/NEP_10k_indices" folder are the old indices that had errors in the time-series fixed by Al.
 
 ## Index derivation
 
@@ -73,11 +73,15 @@ X^{proj'}_t=\exp\left(\bar{logX}^{hind}_{\bar{T}}+
 \left(logX^{proj}_t-\bar{logX}_{\bar{T}}^{hist} \right)\right)\right)
 $$
 
-where $T$, $\sigma^{hind}_{\bar{T}}$ is the standard deviation of the log index from the hindcast during the reference period, $\sigma^{hist}_{\bar{T}}$ is the standard deviation of the log indext from the histroical run during the reference period.
+where $T$, $\sigma^{hind}_{\bar{T}}$ is the standard deviation of the log index from the hindcast during the reference period, $\sigma^{hist}_{\bar{T}}$ is the standard deviation of the log index from the historical run during the reference period.
 
 Because the smallest time step in month, the mean and variance terms should be calculated as follows:
 
 -   Monthly indices: time-step $t$ should be year $y$ and month $m$ (e.g. $t=y,m$)
+
+Users can decide to apply a delta correction method that does not use the ratio between the standard deviations as scaling factor. Scaling by the standard deviation may result in artefacts being introduced, for example if one of the $\sigma$ values is particularly high. This should not happen much at the spatial and temporal resolution used here, but it has been a known issue in Atlantis (which uses daily time steps and a small spatial scale, resulting in fewer ROMS points per calculation) and in some ACLIM applications. The default is `use_sd = TRUE`.
+
+When doing the delta correction, users can decide whether they want the end product to be a time series that consists of the bias-corrected historical run and projection, or historical run, hindcast, and projection. The second option splices the hindcast (which incorporates observations) into the full bias-corrected time series. Analysts that are interested in exploring the effects of recent climate events in the GOA (e.g., the heat wave) may want to use `include_hindcast = TRUE`. If projections are the focus, this becomes less important. 
 
 ## Variables in ROMS NEP
 
@@ -121,7 +125,7 @@ roms_avg_data <- roms_avg_data %>%
   mutate(
     date = lubridate::as_date(date),
     month = lubridate::month(date),
-         year = lubridate::year(date))
+    year = lubridate::year(date))
 ```
 
 **Example indices 1:** monthly index of sea surface temperature across all spatial strata
@@ -131,19 +135,23 @@ roms_avg_data <- roms_avg_data %>%
 # - rbinds bias-corrected projection to historical run
 # - SSP126
 ssp126_biascorrected <- delta_correction(
-    hindcast = roms_avg_data %>% filter(simulation == "hindcast"),
-    historical = roms_avg_data %>% filter(simulation == "historical"),
-    projection = roms_avg_data %>% filter(simulation == "ssp126"),
-    ref_yrs = 2000:2014, # Overlap years for historical and hindcast ROMS
-    lognormal = FALSE)
+  hindcast = roms_avg_data %>% filter(simulation == "hindcast"),
+  historical = roms_avg_data %>% filter(simulation == "historical"),
+  projection = roms_avg_data %>% filter(simulation == "ssp126"),
+  ref_yrs = 1990:2014, # Overlap years for historical and hindcast ROMS
+  lognormal = FALSE,
+  use_sd = TRUE,
+  include_hindcast = FALSE)
 
 # - SSP585
 ssp585_biascorrected <- delta_correction(
   hindcast = roms_avg_data %>% filter(simulation == "hindcast"),
   historical = roms_avg_data %>% filter(simulation == "historical"),
   projection = roms_avg_data %>% filter(simulation == "ssp585"),
-  ref_yrs = 2000:2014, # Overlap years for historical and hindcast ROMS
-  lognormal = FALSE)
+  ref_yrs = 1990:2014, # Overlap years for historical and hindcast ROMS
+  lognormal = FALSE,
+  use_sd = TRUE,
+  include_hindcast = FALSE)
 
 # Extract variable of interest
 goa_SST_ssp126 <- ssp126_biascorrected %>%
@@ -157,7 +165,7 @@ goa_SST_ssp585 <- ssp585_biascorrected %>%
 # Plot it
 ggplot(rbind(goa_SST_ssp126, goa_SST_ssp585), aes(date, value_dc)) + 
   geom_line() + 
-  facet_wrap(~simulation) + ylab("SST (celcius)") + xlab("Year-Month")
+  facet_wrap(~simulation) + ylab("SST (C)") + xlab("Year-Month")
 ```
 
 **Example indices 2:** seasonal sea surface temperature across all spatial strata
@@ -176,7 +184,7 @@ seasonal_sst_ssp126 <- goa_SST_ssp126 %>%
 
 # Plot it
 ggplot(seasonal_sst_ssp126, aes(year, value_dc, colour = season)) + geom_line() +
-  ylab("SST (celcius)") + xlab("Year")
+  ylab("SST (C)") + xlab("Year")
 ```
 
 **Example indices 3:** Monthly sea surface temperature across 610 and 620 for SSP126 and SSP585
@@ -199,13 +207,13 @@ goa_SST_ssp585 <- ssp585_biascorrected %>%
 # Plot it
 goa_SST_610_620 <- rbind(goa_SST_ssp126, goa_SST_ssp585)
 ggplot(goa_SST_610_620, aes(year, value_dc_610_620, colour = simulation)) + geom_line() +
-  ylab("SST (Celcius)") + xlab("Year") + facet_wrap(~simulation)
+  ylab("SST (C)") + xlab("Year") + facet_wrap(~simulation)
 ```
 
-**Example index 4:** mean monthly seasonal small copepod biomass spatial strata 610 and 620 up to the 300 m isobath for SSP585 across the water column
+**Example index 4:** mean seasonal small copepod biomass spatial strata 610 and 620 up to the 300 m isobath for SSP585 across the water column
 
 ```{r}
-# Load data averaged across depth and strata
+# Load data integrated across depth and strata
 nep_hind <- read.csv("Data/NEP_10k_revised_indices/nep_sum_hind_300.csv")
 nep_hind$simulation = "hindcast"
 
@@ -226,26 +234,30 @@ roms_sum_data <- roms_sum_data %>%
   mutate(
     date = lubridate::as_date(date),
     month = lubridate::month(date),
-         year = lubridate::year(date))
+    year = lubridate::year(date))
 
 
 # Run bias correction for all variables 
 # - rbinds bias-corrected projection to historical run
 # - SSP126
 ssp126_sum_biascorrected <- delta_correction(
-    hindcast = roms_sum_data %>% filter(simulation == "hindcast"),
-    historical = roms_sum_data %>% filter(simulation == "historical"),
-    projection = roms_sum_data %>% filter(simulation == "ssp126"),
-    ref_yrs = 2000:2014, # Overlap years for historical and hindcast ROMS
-    lognormal = FALSE)
+  hindcast = roms_sum_data %>% filter(simulation == "hindcast"),
+  historical = roms_sum_data %>% filter(simulation == "historical"),
+  projection = roms_sum_data %>% filter(simulation == "ssp126"),
+  ref_yrs = 1990:2014, # Overlap years for historical and hindcast ROMS
+  lognormal = FALSE,
+  use_sd = TRUE,
+  include_hindcast = FALSE)
 
 # - SSP585
 ssp585_sum_biascorrected <- delta_correction(
   hindcast = roms_sum_data %>% filter(simulation == "hindcast"),
   historical = roms_sum_data %>% filter(simulation == "historical"),
   projection = roms_sum_data %>% filter(simulation == "ssp585"),
-  ref_yrs = 2000:2014, # Overlap years for historical and hindcast ROMS
-  lognormal = FALSE)
+  ref_yrs = 1990:2014, # Overlap years for historical and hindcast ROMS
+  lognormal = FALSE,
+  use_sd = TRUE,
+  include_hindcast = FALSE)
 
 
 # Extract small copepod for desired area
@@ -253,15 +265,15 @@ goa_cop_ssp585 <- ssp585_sum_biascorrected %>%
   filter(varname == "Cop" & depthclass == "All" & NMFS_AREA %in% c(610, 620)) %>%
   mutate(simulation = "ssp585")
 
-# Convert to biomass
-# - Units of Cop are mg C m^-2 of water column
+# Convert to t C per NMFS area. You may use alternative calculations here
+# - Units of Cop in the *sum* files are mg C m^-2 of water column
 # - Area is in m^2
-# - Final units will be tonne 1e-9 tonnes in a gram
+# - There are 1e-9 tonnes in a mg
+# - Final units will be t C per NMFS area 
 goa_cop_ssp585 <- goa_cop_ssp585 %>%
   mutate(Cop_biom = case_when(
-    NMFS_AREA == "610" ~ 63986698621 * value * 1e-9,
-# 610 area = 63986698621 m^2
-    NMFS_AREA == "620" ~ 69583703140 * value * 1e-9 # 620 area = 69583703140 m^2
+    NMFS_AREA == "610" ~ 63986698621 * value_dc * 1e-9, # 610 area = 63986698621 m^2
+    NMFS_AREA == "620" ~ 69583703140 * value_dc * 1e-9 # 620 area = 69583703140 m^2
   ))
 
 # Take mean fall 
@@ -280,4 +292,31 @@ goa_cop_ssp585 <- goa_cop_ssp585 %>%
 # Plot it
 ggplot(goa_cop_ssp585, aes(year, Cop_biom, colour = season)) + geom_line() +
   ylab("Cop biomass (tonnes)") + xlab("Year")
+```
+
+**Example index 5:** annual small copepod production ($t C km^{-2} yr^{-1}$) per NMFS area, up to the 300 m isobath, for scenario ssp585. This example should yield a production index that could be used in EwE. 
+
+```{r}
+# Extract small copepod production for desired area
+# Starting from sum file because it already integrates concentrations to have them as "flat" values per area
+goa_cop_prod_ssp585 <- ssp585_sum_biascorrected %>%
+  filter(varname == "prod_Cop" & depthclass == "All" & NMFS_AREA %in% c(610, 620)) %>%
+  mutate(simulation = "ssp585")
+
+# Convert to t C km^-2 yr^-1 per NMFS area. You may use alternative calculations here
+# - Units of prod_Cop are mg C m^-2 d^-1
+# - Area is in m^2. There are 1e+6 m2 in a km2
+# - There are 1e-9 tonnes in a mg
+# - There are ~30 days in a month (approximation, you could get more precise and interpolate monthly values to daily)
+goa_cop_prod_ssp585_ewe <- goa_cop_prod_ssp585 %>%
+  mutate(month = lubridate::month(date),
+         year = lubridate::year(date)) %>%
+  mutate(monthly_value = value_dc * 1e-9 * 1e+6 * 30) %>% # value in t C km-2 mo-1
+  group_by(NMFS_AREA, simulation, depthclass, varname, year) %>%
+  summarise(ecopath_value = sum(monthly_value)) %>%
+  ungroup()
+
+# Plot it
+ggplot(goa_cop_prod_ssp585_ewe, aes(year, ecopath_value, colour = NMFS_AREA)) + geom_line() +
+  ylab("Cop production (tonnes C km-2 yr-1)") + xlab("Year")
 ```
