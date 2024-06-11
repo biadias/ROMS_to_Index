@@ -14,10 +14,10 @@ Time-averaged f ratio for large phytoplankton,,frat_PhL
 Nitrate,mmol N m^-3,NO3
 Salinity,PSU,salt
 Small copepod concentration,mg C m^-3,Cop
-Small copepod net production rate,mg C m^-2 d^-1,prod_Cop
+Small copepod net production rate,mg C m^-3 d^-1,prod_Cop
 Small microzooplankton concentration,mg C m^-3,MZS
 Small microzooplankton production rate,mg C m^-3 d^-1,prod_MZS
 Small phytoplankton concentration,mg C m^-3,PhS
 Small phytoplankton production rate,mg C m^-3 d^-1,prod_PhS
 Time-averaged f ratio for small phytoplankton,,frat_PhS
-Temperature,Celcius,temp
+Temperature,Celsius,temp
