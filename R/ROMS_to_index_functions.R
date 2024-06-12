@@ -36,24 +36,7 @@ interp_foo <- function(romsdepths,romsvar) {
 #' 
 interpolate_var <- function(romsfile, variable, time_step, this_roms_vars, this_roms_variables, min_depth = 0, max_depth = -1000, average = TRUE){
   
-  romsfile = "Data/ROMS/monthly_averages/nep_hind_moave_2017_01.nc"
-  variable = "Cop"
-  min_depth = 0
-  max_depth = -1000
-  average = TRUE
-  
-  this_roms_vars = tidync(romsfile)
-  this_roms_variables = hyper_grids(this_roms_vars) %>% # all available grids in the ROMS ncdf
-    pluck("grid") %>% # for each grid, pull out all the variables asssociated with that grid and make a reference table
-    purrr::map_df(function(x){
-      this_roms_vars %>% activate(x) %>% hyper_vars() %>% 
-        mutate(grd=x)
-    })
-  time_grd <- this_roms_variables %>% filter(name=="ocean_time") %>% pluck('grd')
-  time_step = this_roms_vars %>% activate(time_grd) %>% hyper_tibble() %>% pull()
-  
-  
-  #print(paste("doing", variable, "for", romsfile, sep = " "))
+  print(paste("doing", variable, "for", romsfile, sep = " "))
   
   #get unit
   this_unit <- ncmeta::nc_atts(romsfile, variable) %>% filter(name == 'units') %>% tidyr::unnest(cols = c(value)) %>% pull(value)
@@ -72,15 +55,6 @@ interpolate_var <- function(romsfile, variable, time_step, this_roms_vars, this_
     mutate(xi_eta = paste(xi_rho, eta_rho, sep = '_')) %>%
     filter(xi_eta %in% xi_eta_set) %>%
     select(-xi_eta)
-  
-  # dat %>%
-  #   left_join(rhoxy, by = c('xi_rho', 'eta_rho')) %>%
-  #   select(lon_rho, lat_rho, Cop, ocean_time) %>%
-  #   filter(ocean_time == 3693686400) %>%
-  #   st_as_sf(coords = c('lon_rho','lat_rho'), crs = 4326) %>%
-  #   st_transform(st_crs(mask)) %>%
-  #   ggplot()+
-  #   geom_sf(aes(color = Cop))
   
   interp_dat <- dat %>% 
     dplyr::select(xi_rho,eta_rho,!!variable) %>% 
