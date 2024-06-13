@@ -148,8 +148,8 @@ window.Quarto = {
 <p>Variables from ROMS simulations averaged for each layer and grid cell on a monthly time scale were averaged or summed across the following vertical distributions:</p>
 <ul>
 <li><p>Surface (from 0 to 10 m depth)</p></li>
-<li><p>Bottom (from bottom to 10 m from bottom)</p></li>
-<li><p>Midwater (from 10 m depth to 10 m from bottom)</p></li>
+<li><p>Bottom (deepest ROMS point assumed to be representative of bottom conditions)</p></li>
+<li><p>Midwater (from 10 m depth to just above the bottom layer - deepest ROMS point)</p></li>
 </ul>
 <p>The averaged for each NMFS management area to the 300 m or 1,000 m isobath (areas are calculated from <code>st_area</code> in the <code>sf</code> package):</p>
 <ul>
@@ -196,12 +196,17 @@ X^{proj'}_t=\exp\left(\bar{logX}^{hind}_{\bar{T}}+
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>nep_vars <span class="ot">&lt;-</span> <span class="fu">read.csv</span>(<span class="st">"Data/NEP_variable_names.csv"</span>)</span>
 <span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="fu">kable</span>(nep_vars)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output-display">
-<table class="caption-top table table-sm table-striped small" data-quarto-postprocess="true">
+<table class="caption-top table table-sm table-striped small">
+<colgroup>
+<col style="width: 64%">
+<col style="width: 22%">
+<col style="width: 12%">
+</colgroup>
 <thead>
 <tr class="header">
-<th style="text-align: left;" data-quarto-table-cell-role="th">Variable</th>
-<th style="text-align: left;" data-quarto-table-cell-role="th">Units</th>
-<th style="text-align: left;" data-quarto-table-cell-role="th">NEP.name</th>
+<th style="text-align: left;">Variable</th>
+<th style="text-align: left;">Units</th>
+<th style="text-align: left;">NEP.name</th>
 </tr>
 </thead>
 <tbody>
@@ -317,8 +322,6 @@ X^{proj'}_t=\exp\left(\bar{logX}^{hind}_{\bar{T}}+
 </tr>
 </tbody>
 </table>
-
-
 </div>
 </div>
 </section>

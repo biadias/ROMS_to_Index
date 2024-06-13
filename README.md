@@ -22,8 +22,8 @@ Projections are available in the following $CO_2$ pathways:
 Variables from ROMS simulations averaged for each layer and grid cell on a monthly time scale were averaged or summed across the following vertical distributions:
 
 - Surface (from 0 to 10 m depth)
-- Bottom (from bottom to 10 m from bottom)
-- Midwater (from 10 m depth to 10 m from bottom)
+- Bottom (deepest ROMS point assumed to be representative of bottom conditions)
+- Midwater (from 10 m depth to just above the bottom layer - deepest ROMS point)
 
 NMFS areas are clipped to isobaths of interest and the index is calculated as an average for the intersection between the NMFS area and the isobath. The isubaths we use are the 300 m and the 1,000 m isobaths. Areas are calculated from `st_area` in the `sf` package. For the 300 m isobath:
 
