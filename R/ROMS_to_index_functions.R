@@ -98,13 +98,19 @@ interpolate_var <- function(romsfile, variable, time_step, this_roms_vars, this_
   # if(length(check[check>abs(max_depth) | check<abs(min_depth)]) > 0) stop("Some depths of rho points are outside the accepted range")
 
   # Define depth class and remove areas with depth over max_depth
+  # Assumption: the deepest ROMS point is representative of bottom conditions
+  # ROMS rho points do not reach the bottom - the deepest point is at the the midpoint of the deepest layer
+  # This is the end of the interpolation at 1m, and we do not interpolate out of bounds
+  # Therefore, we assume that the deepest point is representative of bottom conditions
+  # The deepest point may be a few m or cm from the bottom at shallow depths, and ~30-40 m off the bottom for the deepest depths (~1000 m)
+  # remember that ROMS vertical coordinates are terrain-following, so depth of the deepest point will vary among ROMS cells
   interp_dat <- interp_dat %>%
     group_by(cellindex) %>%
     mutate(maxdepth = max(abs(depth)),
            depthclass = case_when(
              abs(depth) <= 10 ~ "Surface", # this means that for very shallow points (h = 10) we only get surface variables
-             abs(depth) >= (maxdepth-10) ~ "Bottom",
-             abs(depth) > 10 & abs(depth) < (maxdepth-10) ~ "Midwater"
+             abs(depth) == maxdepth ~ "Bottom", # assumption: the deepest ROMS point is representative of bottom conditions
+             abs(depth) > 10 & abs(depth) < maxdepth ~ "Midwater"
            )) %>%
     ungroup() %>%
     filter(maxdepth <= abs(max_depth) & maxdepth >= abs(min_depth)) # now just a sanity check but should no longer be needed
