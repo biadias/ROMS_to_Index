@@ -81,7 +81,7 @@ Because the smallest time step in month, the mean and variance terms should be c
 
 Users can decide to apply a delta correction method that does not use the ratio between the standard deviations as scaling factor. Scaling by the standard deviation may result in artefacts being introduced, for example if one of the $\sigma$ values is particularly high. This should not happen much at the spatial and temporal resolution used here, but it has been a known issue in Atlantis (which uses daily time steps and a small spatial scale, resulting in fewer ROMS points per calculation) and in some ACLIM applications. The default is `use_sd = TRUE`.
 
-When doing the delta correction, users can decide whether they want the end product to be a time series that consists of the bias-corrected historical run and projection, or historical run, hindcast, and projection. The second option splices the hindcast (which incorporates observations) into the full bias-corrected time series. Analysts that are interested in exploring the effects of recent climate events in the GOA (e.g., the heat wave) may want to use `include_hindcast = TRUE`. If projections are the focus, this becomes less important. 
+When doing the delta correction, users can decide whether they want the end product to be a time series that consists of the bias-corrected historical run and projection, or historical run, hindcast, and projection. The second option splices the hindcast (which incorporates observations) into the full bias-corrected time series. Analysts that are interested in exploring the effects of recent climate events in the GOA (e.g., the heat wave) may want to use `include_hindcast = TRUE`. If projections are the focus, this becomes less important.
 
 ## Variables in ROMS NEP
 
@@ -294,7 +294,7 @@ ggplot(goa_cop_ssp585, aes(year, Cop_biom, colour = season)) + geom_line() +
   ylab("Cop biomass (tonnes)") + xlab("Year")
 ```
 
-**Example index 5:** annual small copepod production ($t C km^{-2} yr^{-1}$) per NMFS area, up to the 300 m isobath, for scenario ssp585. This example should yield a production index that could be used in EwE. 
+**Example index 5:** annual small copepod production ($t C km^{-2} yr^{-1}$) per NMFS area, up to the 300 m isobath, for scenario ssp585. This example should yield a production index that could be used in EwE.
 
 ```{r}
 # Extract small copepod production for desired area
