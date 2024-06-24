@@ -80,7 +80,7 @@ nep_roms <- rbind(nep_avg_hind, nep_sum_hind, nep_avg_hist, nep_sum_hist, nep_av
 
 library(zoo)
 
-window_size <- 24 # averaging every year
+window_size <- 24 # averaging over this many months
 
 nep_roms_avg <- nep_roms %>%
   group_by(Run, NMFS_AREA, depthclass, summaryStat, varname) %>%
