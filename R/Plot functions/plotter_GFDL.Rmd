@@ -36,17 +36,17 @@ options(dplyr.summarise.inform = FALSE)
 ```
 
 ```{r, warning=F}
-nep_avg_hind <- read.csv('../../Data/output_from_loon/nep_avg_revised_hind_300.csv')
-nep_sum_hind <- read.csv('../../Data/output_from_loon/nep_sum_revised_hind_300.csv')
+nep_avg_hind <- read.csv('../../Data/NEP_10k_revised_indices/nep_avg_hind_300.csv')
+nep_sum_hind <- read.csv('../../Data/NEP_10k_revised_indices/nep_sum_hind_300.csv')
 
-nep_avg_hist <- read.csv('../../Data/output_from_loon/nep_avg_wb_hist_300.csv')
-nep_sum_hist <- read.csv('../../Data/output_from_loon/nep_sum_wb_hist_300.csv')
+nep_avg_hist <- read.csv('../../Data/NEP_10k_revised_indices/nep_avg_wb_hist_300.csv')
+nep_sum_hist <- read.csv('../../Data/NEP_10k_revised_indices/nep_sum_wb_hist_300.csv')
 
-nep_avg_126 <- read.csv('../../Data/output_from_loon/nep_avg_wb_ssp126_300.csv')
-nep_sum_126 <- read.csv('../../Data/output_from_loon/nep_sum_wb_ssp126_300.csv')
+nep_avg_126 <- read.csv('../../Data/NEP_10k_revised_indices/nep_avg_wb_ssp126_300.csv')
+nep_sum_126 <- read.csv('../../Data/NEP_10k_revised_indices/nep_sum_wb_ssp126_300.csv')
 
-nep_avg_245 <- read.csv('../../Data/output_from_loon/nep_avg_wb_ssp245_300.csv')
-nep_sum_245 <- read.csv('../../Data/output_from_loon/nep_sum_wb_ssp245_300.csv')
+nep_avg_245 <- read.csv('../../Data/NEP_10k_revised_indices/nep_avg_wb_ssp245_300.csv')
+nep_sum_245 <- read.csv('../../Data/NEP_10k_revised_indices/nep_sum_wb_ssp245_300.csv')
 
 nep_avg_585 <- read.csv('../../Data/output_from_loon/nep_avg_wb_ssp585_300.csv')
 nep_sum_585 <- read.csv('../../Data/output_from_loon/nep_sum_wb_ssp585_300.csv')
@@ -80,7 +80,7 @@ nep_roms <- rbind(nep_avg_hind, nep_sum_hind, nep_avg_hist, nep_sum_hist, nep_av
 
 library(zoo)
 
-window_size <- 24 # averaging over this many months
+window_size <- 1 # averaging over this many months
 
 nep_roms_avg <- nep_roms %>%
   group_by(Run, NMFS_AREA, depthclass, summaryStat, varname) %>%
@@ -158,7 +158,7 @@ varplots_sum <- purrr::map(varnames_sum,~plot_sum(.))
 
 Depth: Surface (top 10 m of the water column).
 
-For trend visualization, 24-month rolling averages are displayed here. Data is in monthly time steps.
+Data is in monthly time steps.
 
 ```{r avg,fig.height=25,fig.width=10,results='asis', warning=F}
 for(i in 1:length(varplots_avg)){
