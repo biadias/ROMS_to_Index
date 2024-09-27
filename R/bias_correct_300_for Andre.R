@@ -5,6 +5,7 @@
 pacman::p_load(mgcv, dplyr, lubridate, ggplot2, tidyr, sf, tidyverse)
 source("R/Delta_correction.R")
 
+
 # ------------------------------------------
 # CALCULATE AREA PER NMFS MGMT AREA
 # ------------------------------------------
