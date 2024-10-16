@@ -264,7 +264,7 @@ CGOA_PhS_ssp126_year <- CGOA_PhS_ssp126 %>%
   summarise(PhS_biom_mean = mean(PhS_biom))
 
 # Save results
-write.csv(CGOA_PhS_ssp126, file="GOA_NEP_ROMZ_PhSBiom_monthly_630_640_ssp126_300_mt_km2.csv")
+write.csv(CGOA_PhS_ssp126, file="CGOA_NEP_ROMZ_PhSBiom_monthly_630_640_ssp126_300_mt_km2.csv")
 write.csv(CGOA_PhS_ssp126_year, file="CGOA_NEP_ROMZ_PhSBiom_yearly_630_640_ssp126_300_mt_km2.csv")
 
 # Plot it
@@ -296,12 +296,66 @@ CGOA_PhL_ssp126 <- CGOA_PhL_ssp126 %>%
 CGOA_PhL_ssp126_year <- CGOA_PhL_ssp126 %>%
   group_by(year) %>%
   summarise(PhL_biom_year = mean(PhL_biom))
-# I STOPED HERE####
+
 
 # Save results
-write.csv(CGOA_PhL_ssp126, file="GOA_NEP_ROMZ_PhLBiom_monthly_630_640_ssp126_300_mt_km2.csv")
+write.csv(CGOA_PhL_ssp126, file="CGOA_NEP_ROMZ_PhLBiom_monthly_630_640_ssp126_300_mt_km2.csv")
 
 # Plot it
 ggplot(CGOA_PhL_ssp126, aes(year, PhL_biom, colour = month)) + geom_line() +
   ylab("PhL biomass (tonnes)") + xlab("Year")
+
+### Productivity ####
+##### Small Phytoplankton ####
+
+# Extract small phytoplankton  for desired area
+CGOA_prod_PhS_ssp126_df <- ssp126_biascorrected %>%
+  filter(varname == "prod_PhS" & depthclass == "Surface" & NMFS_AREA %in% c(630, 640)) %>%
+  mutate(simulation = "ssp126")
+
+# Convert to biomass mt/km2
+## Calculate tonnes km^-2 month^-1
+#tonnes_km2_month <- (mg_C_m3_d * z * 1e-9) * 30 * 1e6
+# 1) mg_C_m3_d: This is the carbon concentration in mg C m−3 d−1.
+# 2) z: The depth in meters ( 10 meters, since I am only using the surface layer 0-10m depth).
+# 3) 1e-9: Converts mg to metric tonnes.
+# 4) 365: Represents the number of days in a year.
+# 5) 1e6: Converts m² to km².
+
+
+CGOA_prod_PhS_ssp126 <- CGOA_prod_PhS_ssp126_df %>%
+  mutate(prod_PhS_biom = case_when(
+    NMFS_AREA == "630" ~  (value * 10*1e-9)*365*1e6,
+    NMFS_AREA == "640" ~ (value * 10*1e-9)*365*1e6
+  ))
+
+# Monthly average 
+CGOA_prod_PhS_ssp126 <- CGOA_prod_PhS_ssp126 %>%
+  group_by(year, month) %>%
+  summarise(prod_PhS_biom_month = sum(prod_PhS_biom))
+
+
+##### Large Phytoplankton ####
+
+# Extract large phytoplankton production for desired area
+CGOA_prod_PhL_ssp126_df <- ssp126_biascorrected %>%
+  filter(varname == "prod_PhL" & depthclass == "Surface" & NMFS_AREA %in% c(630, 640)) %>%
+  mutate(simulation = "ssp126")
+# Convert to biomass mt/km2
+CGOA_prod_PhL_ssp126 <- CGOA_prod_PhL_ssp126_df %>%
+  mutate(prod_PhL_biom = case_when(
+    NMFS_AREA == "630" ~  (value * 10*1e-9)*365*1e6,
+    NMFS_AREA == "640" ~ (value * 10*1e-9)*365*1e6
+  ))
+CGOA_prod_PhL_ssp126 <- CGOA_prod_PhL_ssp126 %>%
+  group_by(year, month) %>%
+  summarise(prod_PhL_biom_month = sum(prod_PhL_biom))
+
+CGOA_prod_Ph_ssp126 <- left_join(CGOA_prod_PhL_ssp126,CGOA_prod_PhS_ssp126, by= c("year", "month")) %>% 
+  rowwise() %>% 
+  mutate(CGOA_prod_Ph= mean(c(prod_PhL_biom_month, prod_PhS_biom_month)))
+
+
+write.csv(CGOA_prod_Ph_ssp126, file="Output/CGOA_NEP_ROMZ_PP_monthly_630_640_ssp126_300_surface_mt_km2.csv")
+
 
